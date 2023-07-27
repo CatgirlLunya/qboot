@@ -48,6 +48,29 @@ void TerminalWriteString(char* string) {
     }
 }
 
+void TerminalWriteNumber(uint64_t number, int base) {
+    uint64_t temp = number;
+    int i = 0;
+
+    static char buf[65]; // Base 2 with a 64 bit number yields 64 digits and 1 null terminator
+
+    do {
+        temp = number % base;
+        // This line converts each digit into a displayable char
+        buf[i++] = (temp < 10) ? (temp + '0') : (temp + 'a' - 10);
+    } while (number /= base); // Goes through each digit until number goes to 0
+    buf[i--] = 0;
+    
+    // Currently, the numbers go the opposite order they should
+    for (int j = 0; j < i; j++, i--) {
+        temp = buf[j];
+        buf[j] = buf[i];
+        buf[i] = temp;
+    }
+
+    TerminalWriteString(buf);
+}
+
 void TerminalWriteStringLength(char *string, size_t length) {
     size_t i = 0;
     while (i < length) {

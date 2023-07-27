@@ -1,11 +1,11 @@
 C_FLAGS := \
 	-Os \
+	-std=c11 \
 	-ffreestanding \
 	-fomit-frame-pointer \
 	-fno-PIE \
 	-fno-PIC \
 	-fno-lto \
-	-m32 \
 	-march=i686 \
 	-mno-80387 \
 	-Wpedantic \
@@ -14,8 +14,10 @@ C_FLAGS := \
 	-Werror 
 
 LD_FLAGS := \
-	-m elf_i386 \
 	-nostdlib \
+	-L/home/luna/opt/cross/lib/gcc/i686-elf/13.1.0/ \
+	-l:libgcc.a \
+	-m elf_i386 \
 	-z max-page-size=0x1000 \
 	-static \
 	-T $(STAGE2_DIR)/linker.ld
@@ -34,11 +36,9 @@ $(BUILD_DIR)/stage2.bin: $(OBJ)
 	objcopy -O binary $(BUILD_DIR)/stage2/stage2.elf $@ 
 
 $(BUILD_DIR)/stage2/%.o: stage2/%.c build_dirs 
-	@mkdir -p $(BUILD_DIR)/stage2
 	$(CC) $(C_FLAGS) -c $< -o $@ -I stage2
 
-$(BUILD_DIR)/stage2/%.o: stage2/%.asm build_dirs 
-	@mkdir -p $(BUILD_DIR)/stage2
+$(BUILD_DIR)/stage2/%.o: stage2/%.asm build_dirs
 	nasm $< -Wall -Werror -felf32 -o $@
 
 .PHONY: build_dirs

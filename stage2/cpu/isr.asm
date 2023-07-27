@@ -62,5 +62,4 @@ execution_handler:
     popa
     add esp, 0x8 ; gets rid of error code and exception number on stack
 
-    sti
     iret

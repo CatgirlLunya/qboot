@@ -16,14 +16,35 @@ enum GateType {
     kTrapGate32 = 0xF,
 };
 
+// Format can be found at https://wiki.osdev.org/IDT
+// Flags: PDD0GGGG
+// - P is the Present Bit, must be set to 1 for all valid entries
+// - D is the Cpu Priviledge Level needed to use INT to use this, 0-3
+// - G is the Gate Type
+union IDTEntryFlags {
+    // Lets you cleanly access the flags
+    uint8_t flags;
+    struct __attribute__((packed)){
+        uint8_t gate_type : 4;
+        uint8_t reserved : 1;
+        uint8_t cpu_priviledge_level : 2;
+        uint8_t present : 1;
+    };
+}__attribute__((packed));
+
 struct IDTEntry {
-    uint32_t offset;
-    enum GateType gate_type;
-};
+    uint16_t isr_low;
+    uint16_t kernel_cs;
+    uint8_t reserved;
+    union IDTEntryFlags flags;
+    uint16_t isr_high;
+}__attribute__((packed));
+
+struct IDTEntry IDTMakeEntry(void(*isr)(void), union IDTEntryFlags flags);
 
 struct IDTDescriptor {
-    uint64_t* idt;
     uint16_t size;  // 1 less than the size of the IDT in bytes
+    struct IDTEntry* idt;
 } __attribute__((packed));
 
 void IDTInsertEntry(uint8_t index, struct IDTEntry entry);
