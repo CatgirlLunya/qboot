@@ -40,6 +40,7 @@ void TerminalPutCharAt(uint8_t character, uint8_t column, uint8_t row, uint8_t c
 void TerminalWriteChar(uint8_t character);
 void TerminalWriteString(char* string);
 void TerminalWriteStringLength(char* string, size_t length);
+void TerminalWriteNumber(uint64_t number, int base);
 void TerminalSetColor(uint8_t color);
 void TerminalSetCursor(bool cursorEnabled);
 void TerminalSetCursorPosition(uint8_t x, uint8_t y);
