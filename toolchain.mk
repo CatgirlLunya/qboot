@@ -1,4 +1,4 @@
-CROSS := ~/opt/cross/bin/i686-elf-
-export CC := $(CROSS)gcc
-export LD := $(CROSS)ld
-export AS := $(CROSS)as
+CROSS_GCC := $(shell which i686-elf-gcc)
+export CC := $(CROSS_GCC)
+export LD := $(subst gcc,ld,$(CROSS_GCC))
+export AS := $(subst gcc,as,$(CROSS_GCC))
