@@ -8,6 +8,7 @@ The Makefile also provides several targets to help debug the bootloader. These a
 - To run the bootloader, you will need `qemu-system`
 - To debug it with bochs, you will need bochs compiled with gui debugger enabled. [The OSDev Wiki](https://wiki.osdev.org/Bochs) provides instructions for compiling bochs from source properly, which is often required.
 - To generate clangd `compile_commands.json`, you need `bear`
+- To run unit tests, you need to compile gtest using the instructions [here](https://stackoverflow.com/questions/38594169/how-to-reconfigure-google-test-for-a-32-bit-embedded-software), and install `gcc-multilib` and `g++-multilib`
 
 ## Building and Running
 To build qboot, run
@@ -33,6 +34,12 @@ To generate `compile_commands.json` for clangd, run
 make clangd 
 ```
 This uses bear, and will clean and then make qboot
+***
+To run the unit tests for the project, stored [here](test/), run
+```bash
+make run_tests
+```
+(Note: you can also build the tests using `make tests`, which outputs an executable as `build/run_tests`)
 ***
 To clean the project, run
 ```bash

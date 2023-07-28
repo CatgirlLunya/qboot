@@ -1,0 +1,1 @@
+cd $1 && ./run_tests
