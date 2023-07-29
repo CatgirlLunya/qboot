@@ -1,3 +1,7 @@
+%ifdef DEBUG
+section .data
+%endif
+
 global gdt ; for unit testing
 
 gdt:
@@ -30,3 +34,5 @@ gdt:
         db 0x0    
 
     .end:
+
+section .text

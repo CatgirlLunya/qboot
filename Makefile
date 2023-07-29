@@ -8,7 +8,7 @@ export STAGE2_DIR = $(ROOT_DIR)/stage2
 
 include toolchain.mk
 
-all: $(BUILD_DIR)/disk.dd $(BUILD_DIR)/stage1.bin $(BUILD_DIR)/stage2.bin tests
+all: $(BUILD_DIR)/disk.dd $(BUILD_DIR)/stage1.bin $(BUILD_DIR)/stage2.bin 
 	dd if=$(BUILD_DIR)/stage1.bin of=$(BUILD_DIR)/disk.dd conv=notrunc
 # Seeks to the start of the partition where stage2 is
 	dd if=$(BUILD_DIR)/stage2.bin of=$(BUILD_DIR)/disk.dd seek=1048576 conv=notrunc bs=1
@@ -34,6 +34,7 @@ clangd: clean
 clean:
 	rm -r $(BUILD_DIR)
 	mkdir -p $(BUILD_DIR)
+	rm -f $(ROOT_DIR)/compile_commands.json
 
 # Creates the disk image using some hacky fdisk stuff b/c I don't want to figure out anything else rn
 $(BUILD_DIR)/disk.dd:

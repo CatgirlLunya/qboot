@@ -1,29 +1,42 @@
+#include "terminal/debug.h"
 #include "terminal/terminal.h"
 #include "cpu/cpu.h"
 #include "cpu/idt.h"
+#include "cpu/lapic.h"
+#include "cpu/pic.h"
+#include "cpu/rsdt.h"
+#include <stdnoreturn.h>
 
-void test(void) {}
+noreturn void halt(void) {
+    __asm__ volatile ("cli");
+    for (;;)
+        __asm__ volatile ("hlt");
+}
 
 int main(void) {
     TerminalInit();
-    TerminalSetColor(TerminalFormColor(kLightMagenta, kLightCyan));
+    TerminalSetColor(TERMINAL_FORM_COLOR(kLightMagenta, kLightCyan));
     TerminalWriteString("Trans Rights!\n");
 
-    struct Registers registers;
-    if (!CPUID(0, &registers)) {
-        TerminalWriteString("CPUID Failed!");
-    } else {
-        TerminalWriteString("Vendor ID: ");
-        TerminalWriteStringLength((char*)&registers.ebx, 4);
-        TerminalWriteStringLength((char*)&registers.edx, 4);
-        TerminalWriteStringLength((char*)&registers.ecx, 4);
-        TerminalWriteChar('\n');
-    }
+    struct RSDPExtended extended;
+    RSDTLocateRSDP(&extended);
+    DebugInfoFormat("RSDP Format: %d\n", extended.rsdp.revision);
 
+    DebugInfo("Initializing IDT...");
     IDTInit();
+    DebugSuccess("Initialized IDT!");
 
-    extern void divide_by_zero(void);
-    divide_by_zero();
+    if (CPUAPICSupported()) {
+        DebugInfo("APIC supported, disabling 8259 PIC and enabling LAPIC and IOAPIC...");
+        PICDisable();
+        DebugSuccess("Disabled PIC!");
+
+        union LAPICStatus status = LAPICGetStatus();
+        status.enabled = true;
+        LAPICSetStatus(status);
+    } else {
+        DebugInfo("APIC not supported, enabling 8259 PIC...");
+    }
 
     return 0;
 }

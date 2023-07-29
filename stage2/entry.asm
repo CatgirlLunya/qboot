@@ -18,5 +18,7 @@ _start:
 
     call main
 
+    cli
     hang:     ; in case main somehow returns, dont reboot
+        hlt
         jmp hang

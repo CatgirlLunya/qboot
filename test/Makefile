@@ -28,7 +28,7 @@ $(BUILD_DIR)/test/%.o: $$(addprefix $(ROOT_DIR)/,$$(subst -,/,%.c)) $(BUILD_DIR)
 	$(TESTING_CC) $(TESTING_C_FLAGS) -c $< -o $@ -I stage2 
 
 $(BUILD_DIR)/test/%.o: $$(addprefix $(ROOT_DIR)/,$$(subst -,/,%.asm)) $(BUILD_DIR)/test
-	$(ASM) $< -Wall -Werror -felf32 -o $@
+	$(ASM) $< -Wall -Werror -felf32 -dDEBUG -o $@
 
 $(BUILD_DIR)/test/%.o: $(ROOT_DIR)/test/%.cc $(BUILD_DIR)/test
 	$(TESTING_CXX) $(TESTING_CXX_FLAGS) -c $< -o $@ -I stage2

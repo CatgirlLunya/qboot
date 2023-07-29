@@ -7,6 +7,7 @@ export TESTING_CC := gcc
 export TESTING_CXX := g++
 export TESTING_LD := gcc
 
+# c11, freestanding, no PIE, no floats, all possible warnings, optimized for size, and min pagesize needed to access first 4 kb of memory
 export C_FLAGS := \
 	-Os \
 	-std=c11 \
@@ -20,7 +21,8 @@ export C_FLAGS := \
 	-Wpedantic \
 	-Wall \
 	-Wextra \
-	-Werror
+	-Werror \
+	--param=min-pagesize=0
 	
 
 export LD_FLAGS := \
@@ -31,17 +33,19 @@ export LD_FLAGS := \
 	-T $(STAGE2_DIR)/linker.ld
 
 export TESTING_C_FLAGS := \
-	-O2 \
+	-Os \
 	-std=c11 \
 	-Wall \
 	-m32 \
+	-no-pie \
 	-pthread # Needed b/c gtest uses it by default
 
 export TESTING_CXX_FLAGS := \
-	-O2 \
+	-Os \
 	-std=c++17 \
 	-Wall \
 	-m32 \
+	-no-pie \
 	-pthread
 
 export TESTING_LD_FLAGS := \
@@ -50,5 +54,5 @@ export TESTING_LD_FLAGS := \
 	-lgtest \
 	-lgtest_main \
 	-lstdc++ \
-	-lm
+	-lm 
 	

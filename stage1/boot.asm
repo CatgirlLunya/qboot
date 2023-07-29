@@ -144,7 +144,6 @@ checka20:
 
         ret
 
-%include "gdt.asm"
 %include "io.asm"
 
 [bits 32]
@@ -163,6 +162,7 @@ pmode:
 hang:
     jmp hang
 
+%include "gdt.asm"
 msgBootInit: db "Bootloader started!", 0x0D, 0x0A, 0x0
 msgLoadedStage2: db "Loaded stage2", 0x0D, 0x0A, 0x0
 msgRealModePrep: db "Jumping to real mode...", 0x0D, 0x0A, 0x0

@@ -1,4 +1,5 @@
 #include "terminal.h"
+#include "cstd/format.h"
 
 static struct TerminalContext terminal_context;
 volatile uint8_t* vgaBuffer = (uint8_t*)0xB8000;
@@ -9,7 +10,7 @@ void TerminalInit(void) {
     terminal_context.cursorRow = 0;
     terminal_context.cursorColumn = 0;
     terminal_context.cursorEnabled = true;
-    terminal_context.color = TerminalFormColor(kWhite, kBlack);
+    terminal_context.color = TERMINAL_FORM_COLOR(kWhite, kBlack);
     TerminalSetCursor(terminal_context.cursorEnabled);
     TerminalSetCursorPosition(0, 0);
 
@@ -20,10 +21,6 @@ void TerminalInit(void) {
     }
 }
 
-uint8_t TerminalFormColor(enum TerminalColor foreground, enum TerminalColor background) {
-    return foreground | (background << 4);
-}
-
 void TerminalPutCharAt(uint8_t character, uint8_t column, uint8_t row, uint8_t color) {
     size_t index = ((size_t)row * 80 + (size_t)column) * 2;
     vgaBuffer[index] = character;
@@ -31,14 +28,19 @@ void TerminalPutCharAt(uint8_t character, uint8_t column, uint8_t row, uint8_t c
     TerminalSetCursorPosition(column, row);
 }
 
-void TerminalWriteChar(uint8_t character) {
+void TerminalWriteChar(char character) {
+    if (character == '\0') return;
     if (character == '\n') {
         terminal_context.row++;
         terminal_context.column = 0;
         return;
     }
-    TerminalPutCharAt(character, terminal_context.column, terminal_context.row, terminal_context.color);
+    TerminalPutCharAt((uint8_t)character, terminal_context.column, terminal_context.row, terminal_context.color);
     terminal_context.column++;
+    if (terminal_context.column > 80) {
+        terminal_context.column -= 80;
+        terminal_context.row++;
+    }
 }
 
 void TerminalWriteString(char* string) {
@@ -48,27 +50,15 @@ void TerminalWriteString(char* string) {
     }
 }
 
-void TerminalWriteNumber(uint64_t number, int base) {
-    uint64_t temp = number;
-    int i = 0;
+void TerminalFormatPrintVarArgs(char* format, va_list args) {
+    FormatVarArgsCallback(TerminalWriteChar, format, args);
+}
 
-    static char buf[65]; // Base 2 with a 64 bit number yields 64 digits and 1 null terminator
-
-    do {
-        temp = number % base;
-        // This line converts each digit into a displayable char
-        buf[i++] = (temp < 10) ? (temp + '0') : (temp + 'a' - 10);
-    } while (number /= base); // Goes through each digit until number goes to 0
-    buf[i--] = 0;
-    
-    // Currently, the numbers go the opposite order they should
-    for (int j = 0; j < i; j++, i--) {
-        temp = buf[j];
-        buf[j] = buf[i];
-        buf[i] = temp;
-    }
-
-    TerminalWriteString(buf);
+void TerminalFormatPrint(char* format, ...) {
+    va_list list;
+    va_start(list, format);
+    FormatVarArgsCallback(TerminalWriteChar, format, list);
+    va_end(list);
 }
 
 void TerminalWriteStringLength(char *string, size_t length) {

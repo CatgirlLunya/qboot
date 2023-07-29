@@ -11,5 +11,5 @@ struct Registers {
     unsigned int edx;
 };
 
-void GetRegisters(struct Registers* registers);
 bool CPUID(unsigned int leaf, struct Registers* registers);
+bool CPUAPICSupported(void);
