@@ -4,7 +4,8 @@
 #include "cpu/idt.h"
 #include "cpu/lapic.h"
 #include "cpu/pic.h"
-#include "cpu/rsdt.h"
+#include "cpu/sdt.h"
+#include "cpu/rsdp.h"
 #include <stdnoreturn.h>
 
 noreturn void halt(void) {
@@ -19,8 +20,18 @@ int main(void) {
     TerminalWriteString("Trans Rights!\n");
 
     struct RSDPExtended extended;
-    RSDTLocateRSDP(&extended);
-    DebugInfoFormat("RSDP Format: %d\n", extended.rsdp.revision);
+    if (!RSDPLocate(&extended)) {
+        DebugCritical("Could not locate RSDP!");
+        halt();
+    }
+    struct SDT rsdt;
+    if (!RSDTRead(&extended.rsdp, &rsdt)) {
+        DebugCritical("Could not read RSDT!");
+        halt();
+    }
+    for (size_t i = 0; i < rsdt.RSDT.count; i++) {
+        DebugInfoFormat("RSDT entry: %mc4", (uint32_t)rsdt.RSDT.other_sdts[i]);
+    }
 
     DebugInfo("Initializing IDT...");
     IDTInit();

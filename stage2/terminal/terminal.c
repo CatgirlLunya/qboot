@@ -51,13 +51,13 @@ void TerminalWriteString(char* string) {
 }
 
 void TerminalFormatPrintVarArgs(char* format, va_list args) {
-    FormatVarArgsCallback(TerminalWriteChar, format, args);
+    (void)FormatVarArgsCallback(TerminalWriteChar, format, args);
 }
 
 void TerminalFormatPrint(char* format, ...) {
     va_list list;
     va_start(list, format);
-    FormatVarArgsCallback(TerminalWriteChar, format, list);
+    (void)FormatVarArgsCallback(TerminalWriteChar, format, list);
     va_end(list);
 }
 

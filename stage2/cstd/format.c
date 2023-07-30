@@ -1,4 +1,5 @@
 #include "format.h"
+#include <stddef.h>
 
 // Takes in a uint64_t, a base, and a buffer with a max length to put the string in
 // Returns how many characters were written
@@ -24,6 +25,15 @@ size_t uint64_to_string(uint64_t x, int base, char* buffer, size_t length) {
 
     return written;
 }
+
+void WriteToCallbackOrBuffer(char* buffer, void(*callback)(char), char c) {
+    if (callback != NULL) callback(c);
+    else *buffer = c;
+}
+
+#define MEMORY_MODE_INT 0
+#define MEMORY_MODE_HEX 1
+#define MEMORY_MODE_CHAR 2
 
 // This big function is private but takes in either a buffer/length pair or a callback along with a format and va_list, to be as generically used as possible
 // If callback isn't NULL it uses that
@@ -70,23 +80,69 @@ int FormatVarArgsCallbackOrBuffer(char* buffer, size_t length, void(*callback)(c
                 if (big) number = (uint64_t)va_arg(list, uint64_t);
                 else number = va_arg(list, uint32_t);
 
-                size_t written;
-                if (callback != NULL) {
-                    written = uint64_to_string(number, base, temp_buf, 65);
-                    for (size_t i = 0; i < written; i++) callback(temp_buf[i]);
-                } else {
-                    written = uint64_to_string(number, base, &buffer[buffer_pos], remaining);
+                size_t written = uint64_to_string(number, base, temp_buf, 65);
+                for (size_t i = 0; i < written; i++) {
+                    WriteToCallbackOrBuffer(&buffer[buffer_pos], callback, temp_buf[i]);
+                    buffer_pos++;
                 }
-                buffer_pos += written;
+                break;
+            }
+            case 'm': {
+                int mode = MEMORY_MODE_INT;
+                char separator = ' '; 
+                while (*format == 'x' || *format == 'c' || *format == 'n') {
+                    switch (*format) {
+                        case 'c':
+                            mode = MEMORY_MODE_CHAR;
+                            separator = '\0';
+                            break;
+                        case 'x':
+                            mode = MEMORY_MODE_HEX;
+                            break;
+                        case 'n':
+                            separator = '\0';
+                            break;
+                    }   
+                    format++;
+                }
+
+                // This gets the length of the memory to read from the pointer passed in
+                char* original_position = format;
+                while (ISDIGIT(*format)) format++;
+                size_t gap = format - original_position;
+                // Now format is one char ahead of where it should be, but properly stores the gap
+                format--;
+                size_t length = 0;
+                for (size_t i = 0; i < gap; i++) {
+                    size_t value = *(format - i) - '0';
+                    for (size_t j = 0; j < i; j++) value *= 10;
+                    length += value;
+                }
+                format++;
+
+                void* pointer = va_arg(list, void*);
+                for (size_t i = 0; i < length; i++) {
+                    if (mode != MEMORY_MODE_CHAR) {
+                        size_t written = uint64_to_string(((uint8_t*)pointer)[i], mode == MEMORY_MODE_INT ? 10 : 16, temp_buf, 65);
+                        for (size_t i = 0; i < written; i++) {
+                            WriteToCallbackOrBuffer(&buffer[buffer_pos], callback, temp_buf[i]); 
+                            buffer_pos++;
+                        }
+                    } else {
+                        WriteToCallbackOrBuffer(&buffer[buffer_pos], callback, ((char*)pointer)[i]);
+                        buffer_pos++;
+                    }
+                    if (i != (length - 1) && separator != '\0') {
+                        WriteToCallbackOrBuffer(&buffer[buffer_pos], callback, separator);
+                        buffer_pos++;
+                    }
+                }
+                
                 break;
             }
         }
     }
-    if (callback != NULL) {
-        callback('\0');
-    } else {
-        buffer[buffer_pos] = '\0';
-    }
+    WriteToCallbackOrBuffer(&buffer[buffer_pos], callback, '\0');
     return buffer_pos;
 }
 

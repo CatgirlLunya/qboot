@@ -31,6 +31,9 @@ run_tests: $(BUILD_DIR)/run_tests
 clangd: clean
 	bear -- make all
 
+clangd_test: clean
+	bear -- make tests
+
 clean:
 	rm -r $(BUILD_DIR)
 	mkdir -p $(BUILD_DIR)

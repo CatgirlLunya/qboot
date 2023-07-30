@@ -39,4 +39,5 @@ void DebugLogFormat(enum LogLevel level, char* format, ...) {
     va_start(list, format);
     TerminalFormatPrintVarArgs(format, list);
     va_end(list);
+    TerminalWriteChar('\n');
 }

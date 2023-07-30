@@ -47,3 +47,13 @@ TEST(FORMAT, COMBINED) {
     Format(buffer, 64, (char*)"Number: %d\n", UINT32_C(123456));
     ASSERT_STREQ(buffer, "Number: 123456\n");
 }
+
+TEST(FORMAT, MEMORY) {
+    char buffer[64];
+    char mem[4] = {0x12, 0x34, 0x56, 0x78};
+    Format(buffer, 64, (char*)"Memory: %mx4 :Memory", mem);
+    ASSERT_STREQ(buffer, "Memory: 12 34 56 78 :Memory");
+    uint8_t mem2[10] = {11, 22, 33, 44, 55, 66, 77, 88, 99, 111};
+    Format(buffer, 64, (char*)"Memory: %m10 :Memory", mem2);
+    ASSERT_STREQ(buffer, "Memory: 11 22 33 44 55 66 77 88 99 111 :Memory");
+}

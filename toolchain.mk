@@ -38,6 +38,8 @@ export TESTING_C_FLAGS := \
 	-Wall \
 	-m32 \
 	-no-pie \
+	-I stage2 \
+	-g \
 	-pthread # Needed b/c gtest uses it by default
 
 export TESTING_CXX_FLAGS := \
@@ -46,6 +48,8 @@ export TESTING_CXX_FLAGS := \
 	-Wall \
 	-m32 \
 	-no-pie \
+	-I stage2 \
+	-g \
 	-pthread
 
 export TESTING_LD_FLAGS := \
