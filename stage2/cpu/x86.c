@@ -16,6 +16,18 @@ uint8_t inb(uint16_t port)  {
     return ret;
 }
 
+void outw(uint16_t port, uint16_t value) {
+    __asm__ volatile ("outw %0, %1" : : "a"(value), "Nd"(port) : "memory"); 
+}
+
+uint16_t inw(uint16_t port) {
+    uint16_t ret;
+    // Ret has "=a" to signify that it is written to and it comes from ax
+    // "Nd" and "memory" same as outb
+    __asm__ volatile ("inw %1, %0" : "=a"(ret) : "Nd"(port) : "memory");
+    return ret;
+}
+
 uint64_t rdmsr(uint32_t msr) {
     // Splits the return into the lower and higher bits b/c smaller than using a union
     uint64_t value;

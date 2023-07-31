@@ -49,3 +49,4 @@ struct IDTDescriptor {
 
 void IDTInsertEntry(uint8_t index, struct IDTEntry entry);
 void IDTInit(void);
+void IDTEnable(void);

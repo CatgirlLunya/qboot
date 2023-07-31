@@ -31,7 +31,25 @@ gdt:
         db 0x00
         db 10010010b    ; Same as above but Data segment
         db 11001111b
-        db 0x0    
+        db 0x0
+
+    ; 0x18
+    .code16:
+        dw 0xFFFF
+        dw 0x0000
+        db 0x00
+        db 0b10011010
+        db 0b00001111
+        db 0x0
+
+    ; 0x20
+    .data16:
+        dw 0xffff
+        dw 0x0000
+        db 0x00
+        db 0b10010010    ; Same as above but Data segment
+        db 0b00001111
+        db 0x0
 
     .end:
 

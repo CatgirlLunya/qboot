@@ -5,9 +5,11 @@
 
 #include "cpu/x86.h"
 #include "cpu/cpu.h"
+#include "cpu/sdt.h"
 
-#define APIC_STATUS_MSR    0x1B       // Taken from Intel Software Developer's Manual, Volume 4, 2.1
-#define APIC_REGISTER_BASE 0xFEE00000 // taken from Intel Software Developer's Manual, Volume 3, 11.4.5 
+#define APIC_STATUS_MSR                     0x1B       // Taken from Intel Software Developer's Manual, Volume 4, 2.1
+#define APIC_SPURIOUS_INTERRUPT_REGISTER    0xF0       // https://wiki.osdev.org/APIC#Local_APIC_and_IO-APIC
+#define APIC_SPURIOUS_INTERRUPT_ENABLE      (1 << 9)   // Ditto
 
 bool LAPICInit(void);
 
@@ -27,3 +29,6 @@ union LAPICStatus {
 
 union LAPICStatus LAPICGetStatus(void);
 void LAPICSetStatus(union LAPICStatus status);
+void LAPICEnable(struct SDT* madt);
+void APICWriteRegister(struct SDT* madt, uint16_t reg, uint32_t value);
+uint32_t APICReadRegister(struct SDT* madt, uint16_t reg);

@@ -155,7 +155,7 @@ pmode:
     mov fs, ax
     mov gs, ax
 
-    mov esp, 0x90000 ; 0xFFFF bytes of free space for stack
+    mov esp, 0x7FFFF ; As much free space for stack as possible, equal to (0x7FFFF - 0x7E00) - stage2 size
 
     jmp 0x7E00
 

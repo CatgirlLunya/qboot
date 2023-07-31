@@ -6,6 +6,7 @@
 #include "cpu/pic.h"
 #include "cpu/sdt.h"
 #include "cpu/rsdp.h"
+#include "memory/bios_memory_map.h"
 #include <stdnoreturn.h>
 
 noreturn void halt(void) {
@@ -29,25 +30,37 @@ int main(void) {
         DebugCritical("Could not read RSDT!");
         halt();
     }
-    for (size_t i = 0; i < rsdt.RSDT.count; i++) {
-        DebugInfoFormat("RSDT entry: %mc4", (uint32_t)rsdt.RSDT.other_sdts[i]);
-    }
 
     DebugInfo("Initializing IDT...");
     IDTInit();
     DebugSuccess("Initialized IDT!");
 
+    DebugInfo("Reading Memory Map...");
+    PopulateMemoryMap();
+    DebugInfo("Base, Length, Type, Flags")
+    for (size_t i = 0; i < MemoryMapEntries; i++) {
+        struct MemoryMapEntry entry = MemoryMap[i];
+        DebugInfoFormat("0x%dlx, 0x%dlx, %d, %d", entry.base, entry.length, entry.type, entry.flags);
+    }
+
+    /* TODO: PAGING and MADT
     if (CPUAPICSupported()) {
         DebugInfo("APIC supported, disabling 8259 PIC and enabling LAPIC and IOAPIC...");
         PICDisable();
         DebugSuccess("Disabled PIC!");
-
-        union LAPICStatus status = LAPICGetStatus();
-        status.enabled = true;
-        LAPICSetStatus(status);
+        
+        struct SDT madt = {
+            .type = kAPIC,
+        };
+        if (!SDTRead(&rsdt, &madt)) {
+            DebugCritical("Failed to properly read MADT!");
+            halt();
+        }
+        
     } else {
         DebugInfo("APIC not supported, enabling 8259 PIC...");
     }
+    */
 
     return 0;
 }

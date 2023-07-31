@@ -2,8 +2,8 @@
     global exception%1
 exception%1:
     cli
-    push dword 0
-    push %1
+    push byte 0
+    push byte %1
     jmp execution_handler
 %endmacro
 
@@ -11,7 +11,7 @@ exception%1:
     global exception%1
 exception%1:
     cli
-    push %1
+    push byte %1
     jmp execution_handler
 %endmacro
 
@@ -47,7 +47,6 @@ EXCEPTION_NOERR 28
 EXCEPTION_NOERR 29
 EXCEPTION_NOERR 30
 EXCEPTION_NOERR 31
-EXCEPTION_NOERR 128
 
 extern CISRHandler
 
@@ -61,5 +60,6 @@ execution_handler:
 
     popa
     add esp, 0x8 ; gets rid of error code and exception number on stack
+    sti
 
     iret

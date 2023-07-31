@@ -18,6 +18,7 @@ SECTIONS {
     /* Puts the ".entry" section marked in entry.asm first */ 
     .text : {
         *(.entry)
+        *(.realmode)
         *(.text .text.*)
     } :text
 

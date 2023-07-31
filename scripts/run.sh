@@ -1,1 +1,1 @@
-qemu-system-x86_64 -drive format=raw,file=$1/disk.dd -m 256
+qemu-system-x86_64 -drive format=raw,file=$1/disk.dd -m 256 -smp 4 -vga std

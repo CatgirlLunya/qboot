@@ -39,6 +39,7 @@ enum TerminalColor{
 #define TERMINAL_FORM_COLOR(foreground, background) (foreground | (background << 4))
 
 void TerminalInit(void);
+void TerminalNewline(void);
 void TerminalPutCharAt(uint8_t character, uint8_t column, uint8_t row, uint8_t color);
 void TerminalWriteChar(char character);
 void TerminalWriteString(char* string);

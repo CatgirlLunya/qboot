@@ -7,8 +7,6 @@ volatile uint8_t* vgaBuffer = (uint8_t*)0xB8000;
 void TerminalInit(void) {
     terminal_context.row = 0;
     terminal_context.column = 0;
-    terminal_context.cursorRow = 0;
-    terminal_context.cursorColumn = 0;
     terminal_context.cursorEnabled = true;
     terminal_context.color = TERMINAL_FORM_COLOR(kWhite, kBlack);
     TerminalSetCursor(terminal_context.cursorEnabled);
@@ -21,6 +19,16 @@ void TerminalInit(void) {
     }
 }
 
+void TerminalNewline(void) {
+    if (terminal_context.row < 24) {
+        terminal_context.row++;
+    } else {
+        MemoryCopy((void*)vgaBuffer, (void*)&vgaBuffer[80*2], 80*24*2);
+    }
+    MemorySet((void*)&vgaBuffer[80*24*2], '\0', 80*2);
+    terminal_context.column = 0;
+}
+
 void TerminalPutCharAt(uint8_t character, uint8_t column, uint8_t row, uint8_t color) {
     size_t index = ((size_t)row * 80 + (size_t)column) * 2;
     vgaBuffer[index] = character;
@@ -30,16 +38,15 @@ void TerminalPutCharAt(uint8_t character, uint8_t column, uint8_t row, uint8_t c
 
 void TerminalWriteChar(char character) {
     if (character == '\0') return;
-    if (character == '\n') {
-        terminal_context.row++;
-        terminal_context.column = 0;
-        return;
-    }
-    TerminalPutCharAt((uint8_t)character, terminal_context.column, terminal_context.row, terminal_context.color);
-    terminal_context.column++;
-    if (terminal_context.column > 80) {
-        terminal_context.column -= 80;
-        terminal_context.row++;
+    else if (character == '\n') {
+        TerminalNewline();
+    } else {
+        TerminalPutCharAt((uint8_t)character, terminal_context.column, terminal_context.row, terminal_context.color);
+        terminal_context.column++;
+        if (terminal_context.column > 80) {
+            terminal_context.column -= 80;
+            terminal_context.row++;
+        }
     }
 }
 

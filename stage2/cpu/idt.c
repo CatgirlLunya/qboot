@@ -84,18 +84,33 @@ EXCEPTION(20); EXCEPTION(21); EXCEPTION(22); EXCEPTION(23);
 EXCEPTION(24); EXCEPTION(25); EXCEPTION(26); EXCEPTION(27);
 EXCEPTION(28); EXCEPTION(29); EXCEPTION(30); EXCEPTION(31);
 
-void IDTInit(void) {
-    struct IDTEntry entry = IDTMakeEntry(exception0, (union IDTEntryFlags){
-        .reserved = 0,
-        .cpu_priviledge_level = 0,
-        .gate_type = kInterruptGate32,
-        .present = 1,
-    });
+typedef void(*isr)(void);
 
+isr isr_list[32] = {
+    exception0, exception1, exception2, exception3,
+    exception4, exception5, exception6, exception7,
+    exception8, exception9, exception10, exception11,
+    exception12, exception13, exception14, exception15,
+    exception16, exception17, exception18, exception19,
+    exception20, exception21, exception22, exception23,
+    exception24, exception25, exception26, exception27,
+    exception28, exception29, exception30, exception31,
+};
+
+void IDTInit(void) {
     for (uint8_t i = 0; i < 32; i++) {
+        struct IDTEntry entry = IDTMakeEntry(isr_list[i], (union IDTEntryFlags){
+            .reserved = 0,
+            .cpu_priviledge_level = 0,
+            .gate_type = kInterruptGate32,
+            .present = 1,
+        });
         IDTInsertEntry(i, entry);
     }
     
     __asm__ volatile ("lidt %0" :: "m"(kIDTDescriptor));
+}
+
+void IDTEnable(void) {
     __asm__ volatile ("sti");
 }
