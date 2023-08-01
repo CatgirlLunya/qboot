@@ -19,7 +19,7 @@ struct IDTEntry IDTMakeEntry(void(*isr)(void), union IDTEntryFlags flags) {
         .kernel_cs = 0x08,
         .reserved = 0,
         .flags = flags,
-        .isr_high = (uint32_t)isr >> 16,
+        .isr_high = (uint16_t)((uint32_t)isr >> 16),
     };
 
     return entry;

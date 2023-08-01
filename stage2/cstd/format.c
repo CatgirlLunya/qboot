@@ -3,7 +3,7 @@
 
 // Takes in a uint64_t, a base, and a buffer with a max length to put the string in
 // Returns how many characters were written
-size_t uint64_to_string(uint64_t x, int base, char* buffer, size_t length) {
+size_t uint64_to_string(uint64_t x, unsigned int base, char* buffer, size_t length) {
     uint64_t temp;
     size_t i = 0;
 
@@ -11,16 +11,16 @@ size_t uint64_to_string(uint64_t x, int base, char* buffer, size_t length) {
         if (i == length) break; 
         temp = x % base;
         // This line converts each digit into a displayable char
-        buffer[i++] = (temp < 10) ? (temp + '0') : (temp + 'A' - 10);
+        buffer[i++] = (char)((temp < 10) ? (temp + '0') : (temp + 'A' - 10));
     } while (x /= base); // Goes through each digit until number goes to 0
     i--; // i now points to final digit
 
     size_t written = i + 1; // Save for return
     // The numbers go the opposite order they should, this fixes it
     for (size_t j = 0; j < i; j++, i--) {
-        temp = buffer[j];
+        temp = (uint64_t)buffer[j];
         buffer[j] = buffer[i];
-        buffer[i] = temp;
+        buffer[i] = (char)temp;
     }
 
     return written;
@@ -38,7 +38,7 @@ void WriteToCallbackOrBuffer(char* buffer, void(*callback)(char), char c) {
 // This big function is private but takes in either a buffer/length pair or a callback along with a format and va_list, to be as generically used as possible
 // If callback isn't NULL it uses that
 // Wish I had lambdas for this holy shit
-int FormatVarArgsCallbackOrBuffer(char* buffer, size_t length, void(*callback)(char), char* format, va_list list) {
+size_t FormatVarArgsCallbackOrBuffer(char* buffer, size_t length, void(*callback)(char), char* format, va_list list) {
     static char temp_buf[65]; // For numbers b/c I don't feel like generalizing that function too
     size_t buffer_pos = 0;
     if (length == 0) length = 0xFFFFFFF;
@@ -109,12 +109,12 @@ int FormatVarArgsCallbackOrBuffer(char* buffer, size_t length, void(*callback)(c
                 // This gets the length of the memory to read from the pointer passed in
                 char* original_position = format;
                 while (ISDIGIT(*format)) format++;
-                size_t gap = format - original_position;
+                size_t gap = (size_t)format - (size_t)original_position;
                 // Now format is one char ahead of where it should be, but properly stores the gap
                 format--;
                 size_t length = 0;
                 for (size_t i = 0; i < gap; i++) {
-                    size_t value = *(format - i) - '0';
+                    size_t value = (size_t)(*(format - i) - '0');
                     for (size_t j = 0; j < i; j++) value *= 10;
                     length += value;
                 }
@@ -146,26 +146,26 @@ int FormatVarArgsCallbackOrBuffer(char* buffer, size_t length, void(*callback)(c
     return buffer_pos;
 }
 
-int FormatVarArgs(char* buffer, size_t length, char* format, va_list args) {
+size_t FormatVarArgs(char* buffer, size_t length, char* format, va_list args) {
     return FormatVarArgsCallbackOrBuffer(buffer, length, NULL, format, args);
 }
 
-int FormatVarArgsCallback(void(*callback)(char), char* format, va_list args) {
+size_t FormatVarArgsCallback(void(*callback)(char), char* format, va_list args) {
     return FormatVarArgsCallbackOrBuffer(NULL, 0, callback, format, args);
 }
 
-int Format(char* buffer, size_t length, char* format, ...) {
+size_t Format(char* buffer, size_t length, char* format, ...) {
     va_list args;
     va_start(args, format);
-    int ret = FormatVarArgsCallbackOrBuffer(buffer, length, NULL, format, args);
+    size_t ret = FormatVarArgsCallbackOrBuffer(buffer, length, NULL, format, args);
     va_end(args);
     return ret;
 }
 
-int FormatCallback(void(*callback)(char), char* format, ...) {
+size_t FormatCallback(void(*callback)(char), char* format, ...) {
     va_list args;
     va_start(args, format);
-    int ret = FormatVarArgsCallbackOrBuffer(NULL, 0, callback, format, args);
+    size_t ret = FormatVarArgsCallbackOrBuffer(NULL, 0, callback, format, args);
     va_end(args);
     return ret;
 }

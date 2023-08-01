@@ -1,7 +1,7 @@
 #include "debug.h"
 #include "terminal/terminal.h"
 
-uint16_t color_map[5] = {
+uint8_t color_map[5] = {
     TERMINAL_FORM_COLOR(kLightGreen, kBlack),
     TERMINAL_FORM_COLOR(kWhite, kBlack),
     TERMINAL_FORM_COLOR(kYellow, kBlack),

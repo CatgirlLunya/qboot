@@ -22,6 +22,7 @@ export C_FLAGS := \
 	-Wall \
 	-Wextra \
 	-Werror \
+	-Wconversion \
 	--param=min-pagesize=0
 	
 
@@ -35,6 +36,7 @@ export LD_FLAGS := \
 export TESTING_C_FLAGS := \
 	-Os \
 	-std=c11 \
+	-ffreestanding \
 	-Wall \
 	-m32 \
 	-no-pie \

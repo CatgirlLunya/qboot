@@ -12,8 +12,8 @@ void TerminalInit(void) {
     TerminalSetCursor(terminal_context.cursorEnabled);
     TerminalSetCursorPosition(0, 0);
 
-    for (int y = 0; y < 25; y++) {
-        for (int x = 0; x < 80; x++) {
+    for (uint8_t y = 0; y < 25; y++) {
+        for (uint8_t x = 0; x < 80; x++) {
             TerminalPutCharAt(0, x, y, 0);
         }
     }
@@ -100,7 +100,7 @@ void TerminalSetCursor(bool cursorEnabled) {
 }
 
 void TerminalSetCursorPosition(uint8_t x, uint8_t y) {
-    uint16_t position = y * 80 + x;
+    uint16_t position = (uint16_t)((uint16_t)y * 80) + x;
     outb(0x3D4, 0x0F); // Cursor location low register
     outb(0x3D5, (uint8_t) (position & 0xFF));
     outb(0x3D4, 0x0E); // Cursor location high register
