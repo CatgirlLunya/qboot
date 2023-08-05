@@ -34,6 +34,7 @@ To generate `compile_commands.json` for clangd, run
 make clangd 
 ```
 This uses bear, and will clean and then make qboot
+(You can do `make clangd_test` to generate files for testing, as that build system is separate)
 ***
 To run the unit tests for the project, stored [here](test/), run
 ```bash
