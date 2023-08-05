@@ -1,4 +1,4 @@
-display_library: sdl2, options="gui_debug"
+display_library: x, options="gui_debug"
 megs: 128
 boot: disk
 ata0-master: type=disk, path=build/disk.dd, mode=flat

@@ -37,6 +37,8 @@ void MemoryMapPopulate(void) {
             break;
         }
     }
+
+    MemoryMapFix();
 }
 
 void CleanMemoryMapInvalidEntries(void) {
@@ -49,6 +51,12 @@ void CleanMemoryMapInvalidEntries(void) {
         i--;
         MemoryMapEntries--;
     }
+}
+
+size_t MemMapInsertUnsafe(struct MemoryMapEntry entry) {
+    MemoryMap[MemoryMapEntries] = entry;
+    MemoryMapEntries++;
+    return MemoryMapEntries - 1;
 }
 
 // Algorithm for fixing overlapped regions:
@@ -67,7 +75,7 @@ void CleanMemoryMapInvalidEntries(void) {
 
 // Page tables should never be overwritten
 static int MemoryTypePriorityLevel[kMaxMemoryTypes] = {
-    -1, 0, 2, 1, 2, 3, 4, 4
+    -1, 0, 2, 1, 2, 3, 4, 4, 4, 4
 };
 
 void MemoryMapFix(void) {
@@ -101,7 +109,7 @@ void MemoryMapFix(void) {
     // Fixing regions of unusable memory and usable memory that overlap because apparently this occurs sometimes
     for (size_t i = 0; i < MemoryMapEntries; i++) {
         struct MemoryMapEntry* checker = &MemoryMap[i];
-        if (checker->length == 0) continue;
+        if (checker->length == 0 || checker->type == kUsableRAM) continue;
         for (size_t j = 0; j < MemoryMapEntries; j++) {
             struct MemoryMapEntry* collider = &MemoryMap[j];
             if (i == j) continue;
@@ -116,7 +124,7 @@ void MemoryMapFix(void) {
                         .type = checker->type,
                         .flags = checker->flags,
                     };
-                    MemoryMapInsert(entry);
+                    MemMapInsertUnsafe(entry);
                     checker->length = collider->base - checker->base;
                 } else {
                     checker->length = collider->base - checker->base;
@@ -139,6 +147,29 @@ void MemoryMapFix(void) {
     CleanMemoryMapInvalidEntries();
 }
 
+size_t MemoryMapReserve(uint64_t length) {
+    uint64_t base = 0;
+    for (size_t i = 0; i < MemoryMapEntries; i++) {
+        struct MemoryMapEntry entry = MemoryMap[i];
+        if (entry.base >= 0x100000 && entry.type == kUsableRAM && entry.length >= length) {
+            base = entry.base;
+            break;
+        }
+    }
+    if (base == 0) {
+        return (size_t)-1;
+    }
+
+    struct MemoryMapEntry entry = {
+        .base = base,
+        .length = length,
+        .type = kMaxMemoryTypes,
+        .flags = 1, 
+    };
+
+    return MemoryMapInsert(entry);
+}
+
 size_t MemoryMapInsert(struct MemoryMapEntry entry) {
     if (MemoryMapEntries > MAX_MEMMAP_ENTRIES) {
         DebugError("Too many memmap entries!");
@@ -146,6 +177,16 @@ size_t MemoryMapInsert(struct MemoryMapEntry entry) {
     }
     MemoryMap[MemoryMapEntries] = entry;
     MemoryMapEntries++;
+    MemoryMapFix();
     return MemoryMapEntries - 1;
 }
 
+
+uint64_t MemoryMapRAMCount(void) {
+    uint64_t memory_to_manage = 0;
+    for (size_t i = 0; i < MemoryMapEntries; i++) {
+        if (MemoryMap[i].type != kUsableRAM) continue;
+        memory_to_manage = MAX(memory_to_manage, MemoryMap[i].base + MemoryMap[i].length);
+    }
+    return memory_to_manage;
+}

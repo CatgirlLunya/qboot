@@ -37,4 +37,6 @@ extern size_t MemoryMapEntries;
 
 void MemoryMapPopulate(void);
 void MemoryMapFix(void);
+size_t MemoryMapReserve(uint64_t length);
 size_t MemoryMapInsert(struct MemoryMapEntry entry);
+uint64_t MemoryMapRAMCount(void);
