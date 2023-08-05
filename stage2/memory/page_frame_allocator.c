@@ -3,6 +3,11 @@
 
 uint8_t* PageFrame = NULL;
 uint64_t PageFrameEntries = 0;
+uint64_t NextPage = 0;
+
+bool PageFrameAllocatorGetPage(uint64_t page) {
+    return PageFrame[page/8] & (1 << (page % 8));
+}
 
 void PageFrameAllocatorSetPage(uint64_t page, bool used) {
     if (PageFrame == NULL) return;
@@ -35,4 +40,37 @@ int PageFrameAllocatorInit(void) {
     }
 
     return 1;
+}
+
+uint64_t SearchForPageBlock(uint64_t pages, uint64_t start, uint64_t limit) {
+    for (uint64_t page = start; page < limit; page++) {
+        bool usable = true;
+        for (uint64_t i = 0; i < pages; i++) {
+            if (PageFrameAllocatorGetPage(page+i)) {
+                usable = false;
+                page += i;
+                break;
+            }
+        }
+        if (usable) {
+            return page;
+        }
+    }
+
+    return 0;
+}
+
+uint8_t* PageFrameAllocatePages(uint64_t pages) {
+    uint64_t page_block = SearchForPageBlock(pages, NextPage, PageFrameEntries);
+    if (page_block == 0) {
+        page_block = SearchForPageBlock(pages, 0, NextPage);
+    }
+
+    if (page_block == 0) return 0;
+
+    NextPage = page_block + pages;
+    for (uint64_t page = 0; page < pages; page++) {
+        PageFrameAllocatorSetPage(page_block+page, true);
+    }
+    return (uint8_t*)((size_t)(page_block * PAGE_SIZE));
 }

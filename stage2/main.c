@@ -38,17 +38,22 @@ int main(void) {
 
     DebugInfo("Reading Memory Map...");
     MemoryMapPopulate();
-    for (size_t i = 0; i < MemoryMapEntries; i++) {
-        struct MemoryMapEntry entry = MemoryMap[i];
-        DebugInfoFormat("Memory Map Entry: %dlx, %dlx, %d, %d", entry.base, entry.length, entry.type, entry.flags);
-    }
-    
+
     if (!PageFrameAllocatorInit()) {
         DebugCritical("Failed to initialize page frame allocator!");
         halt();
     } else {
         DebugInfoFormat("Initialized page frame allocator, using %d bytes", PageFrameEntries);
     }
+
+    uint8_t* allocated_pages = PageFrameAllocatePages(5);
+    if (allocated_pages == 0) {
+        DebugCritical("Allocation test failure!");
+        halt();
+    }
+
+    DebugInfoFormat("Allocated Pages at 0x%dx, Next Page: 0x%dx", allocated_pages, NextPage * PAGE_SIZE);
+    
 
 
     /* TODO: PAGING and MADT
