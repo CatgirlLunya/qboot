@@ -15,7 +15,7 @@ void PageFrameAllocatorSetPage(uint64_t page, bool used) {
 int PageFrameAllocatorInit(void) {
     // Get as much RAM as we need to handle, divide it into pages(4096), divide that so 8 pages per byte
     // Formula has addition to make sure we round up
-    uint64_t pages_required = ((MemoryMapRAMCount() + 4095) / 4096);
+    uint64_t pages_required = ((MemoryMapRAMCount32Bit() + 4095) / 4096);
     uint64_t bytes_required = (pages_required + 7) / 8;
     size_t map_entry = MemoryMapReserve(bytes_required);
     if (map_entry == (size_t)-1) return 0;
@@ -25,7 +25,7 @@ int PageFrameAllocatorInit(void) {
     PageFrameEntries = bytes_required;
     for (uint64_t page = 0; page < pages_required; page++) {
         PageFrameAllocatorSetPage(page, true); // Everything is set to "used" by default, only guaranteed to be safe memory locations allowed
-        if (page <= 0x100) continue; // Page is in the first megabyte
+        if (page <= 0x100 || page >= 0x100000) continue; // Page is out of the first megabyte and in the first 4 gb
         for (size_t memmap_entry = 0; memmap_entry < MemoryMapEntries; memmap_entry++) {
             // Checks if page is fully inside a Usable RAM memory entry
             if (MemoryMap[memmap_entry].type != kUsableRAM) continue;

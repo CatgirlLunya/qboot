@@ -38,24 +38,18 @@ int main(void) {
 
     DebugInfo("Reading Memory Map...");
     MemoryMapPopulate();
-
-    if (!PageFrameAllocatorInit()) {
-        DebugCritical("Failed to initialize page frame allocator!");
-        halt();
-    } else {
-        DebugInfo("Initialized page frame allocator");
-    }
-
-    BochsBreak();
-
-    for (uint64_t entry = 0; entry < PageFrameEntries; entry += 1000) {
-        DebugInfoFormat("%mx30", &PageFrame[entry]);
-    }
-
     for (size_t i = 0; i < MemoryMapEntries; i++) {
         struct MemoryMapEntry entry = MemoryMap[i];
         DebugInfoFormat("Memory Map Entry: %dlx, %dlx, %d, %d", entry.base, entry.length, entry.type, entry.flags);
     }
+    
+    if (!PageFrameAllocatorInit()) {
+        DebugCritical("Failed to initialize page frame allocator!");
+        halt();
+    } else {
+        DebugInfoFormat("Initialized page frame allocator, using %d bytes", PageFrameEntries);
+    }
+
 
     /* TODO: PAGING and MADT
     if (CPUAPICSupported()) {

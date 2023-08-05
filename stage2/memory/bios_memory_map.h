@@ -40,3 +40,4 @@ void MemoryMapFix(void);
 size_t MemoryMapReserve(uint64_t length);
 size_t MemoryMapInsert(struct MemoryMapEntry entry);
 uint64_t MemoryMapRAMCount(void);
+uint32_t MemoryMapRAMCount32Bit(void);

@@ -190,3 +190,13 @@ uint64_t MemoryMapRAMCount(void) {
     }
     return memory_to_manage;
 }
+
+uint32_t MemoryMapRAMCount32Bit(void) {
+    uint32_t memory_to_manage = 0;
+    for (size_t i = 0; i < MemoryMapEntries; i++) {
+        if (MemoryMap[i].type != kUsableRAM) continue;
+        if (MemoryMap[i].base + MemoryMap[i].length >= 0x100000000) continue; // Stay in the first 4 GB
+        memory_to_manage = MAX(memory_to_manage, (uint32_t)(MemoryMap[i].base + MemoryMap[i].length));
+    }
+    return memory_to_manage;
+}
