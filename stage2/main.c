@@ -46,13 +46,12 @@ int main(void) {
         DebugInfoFormat("Initialized page frame allocator, using %d bytes", PageFrameEntries);
     }
 
-    uint8_t* allocated_pages = PageFrameAllocatePages(5);
-    if (allocated_pages == 0) {
+    uint8_t* allocated_bytes = PageFrameAllocate(4090);
+    if (allocated_bytes == 0) {
         DebugCritical("Allocation test failure!");
         halt();
     }
-
-    DebugInfoFormat("Allocated Pages at 0x%dx, Next Page: 0x%dx", allocated_pages, NextPage * PAGE_SIZE);
+    PageFrameFree(allocated_bytes);
     
 
 

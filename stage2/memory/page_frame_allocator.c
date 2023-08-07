@@ -1,5 +1,4 @@
 #include "page_frame_allocator.h"
-#include "memory/bios_memory_map.h"
 
 uint8_t* PageFrame = NULL;
 uint64_t PageFrameEntries = 0;
@@ -73,4 +72,38 @@ uint8_t* PageFrameAllocatePages(uint64_t pages) {
         PageFrameAllocatorSetPage(page_block+page, true);
     }
     return (uint8_t*)((size_t)(page_block * PAGE_SIZE));
+}
+
+void PageFrameFreePages(uint8_t* page_ptr, uint64_t pages) {
+    size_t page_base = ((size_t)page_ptr / PAGE_SIZE);
+    for (size_t page = 0; page < pages; page++) {
+        if (PageFrameAllocatorGetPage(page_base + page) == false) {
+            DebugErrorFormat("Double free detected, ptr: 0x%dx", page_ptr);
+        }
+        PageFrameAllocatorSetPage(page_base+page, false);
+    }
+    NextPage = page_base;
+}
+
+uint8_t* PageFrameAllocate(uint64_t bytes) {
+    if (bytes == 0) {
+        DebugError("Tried to allocate 0 bytes!");
+        return NULL;
+    }
+    // Need an extra 8 bytes to store number of pages allocated
+    uint64_t pages_needed = (bytes + sizeof(uint64_t) + 4095) / PAGE_SIZE;
+    uint8_t* ptr = PageFrameAllocatePages(pages_needed);
+    MemoryCopy(ptr, &pages_needed, sizeof(uint64_t));
+
+    return ptr + sizeof(uint64_t);
+}
+
+void PageFrameFree(uint8_t* ptr) {
+    if (ptr == NULL) {
+        DebugError("Tried to free null pointer!");
+        return;
+    }
+    uint64_t pages_to_free;
+    MemoryCopy(&pages_to_free, ptr - sizeof(uint64_t), sizeof(uint64_t));
+    PageFrameFreePages(ptr - sizeof(uint64_t), pages_to_free);
 }
