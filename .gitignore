@@ -3,3 +3,6 @@ build/
 .vscode/
 compile_commands.json
 bx_enh_dbg.ini
+zig-cache/
+zig-out/
+uefi/OVMF.fd
