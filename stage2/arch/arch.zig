@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 
-pub const api = switch (builtin.os.tag) {
+pub usingnamespace switch (builtin.os.tag) {
     .uefi => @import("uefi/index.zig"),
     .freestanding => switch (builtin.cpu.arch) {
         .x86 => @import("bios/index.zig"),

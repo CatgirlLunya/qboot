@@ -48,14 +48,16 @@ pub fn putChar(c: u8) void {
         newLine();
         return;
     }
+    if (context.column == 80) newLine();
     putCharAt(context.column, context.row, c);
     context.column += 1;
 }
 
-pub fn writeString(str: []const u8) void {
+pub fn writeString(str: []const u8) usize {
     for (str) |c| {
         putChar(c);
     }
+    return str.len;
 }
 
 pub fn setCursor(enabled: bool) void {

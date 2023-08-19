@@ -1,5 +1,5 @@
 display_library: x, options="gui_debug"
 megs: 128
 boot: disk
-ata0-master: type=disk, path=build/disk.dd, mode=flat
+ata0-master: type=disk, path=zig-out/bios/disk.dd, mode=flat
 magic_break: enabled=1

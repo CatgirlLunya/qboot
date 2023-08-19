@@ -16,14 +16,14 @@ pub fn init() bool {
 
 pub fn writeChar(char: u8) void {
     if (con_out) |c| {
-        if (char == '\n') writeChar('\r');
+        if (char == '\n') newLine();
         const utf16arr = [2]u16{ char, 0 };
         _ = c.outputString(@as(*const [1:0]u16, @ptrCast(&utf16arr)));
     }
 }
 
 pub fn newLine() void {
-    writeChar('\n');
+    writeChar('\r');
 }
 
 pub fn setCursor(enabled: bool) void {

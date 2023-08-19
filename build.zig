@@ -5,9 +5,9 @@ fn here() []const u8 {
 }
 
 pub fn build(b: *std.Build) void {
-    var bios_stage1_target = CreateBIOSStage2Target(b);
-    const test_step = b.step("bios", "Make the bios stage 2");
-    test_step.dependOn(bios_stage1_target);
+    var bios_target = CreateBIOSStage2Target(b);
+    SetupRunBIOS(b, bios_target);
+    SetupDebugBIOS(b, bios_target);
 
     var uefi_target = CreateUEFITarget(b);
     SetupRunUEFI(b, uefi_target);
@@ -70,22 +70,30 @@ fn CreateBIOSStage1Target(b: *std.Build, location: []const u8) *std.Build.Step {
 }
 
 fn CreateBIOSStage2Target(b: *std.Build) *std.Build.Step {
-    const target = std.zig.CrossTarget{
+    var target = std.zig.CrossTarget{
         .cpu_arch = .x86,
         .abi = .none,
         .os_tag = .freestanding,
     };
 
+    const features = std.Target.x86.Feature;
+
+    target.cpu_features_sub.addFeature(@intFromEnum(features.mmx));
+    target.cpu_features_sub.addFeature(@intFromEnum(features.sse));
+    target.cpu_features_sub.addFeature(@intFromEnum(features.sse2));
+    target.cpu_features_sub.addFeature(@intFromEnum(features.avx));
+    target.cpu_features_sub.addFeature(@intFromEnum(features.avx2));
+    target.cpu_features_add.addFeature(@intFromEnum(features.soft_float));
+
     // zig fmt: off
     const exe = b.addExecutable(.{
         .name = "stage2.bin",
-        .root_source_file = .{ .path = "stage2/arch/bios/entry.zig" },
+        .root_source_file = .{ .path = comptime here() ++ "/stage2/arch/bios/entry.zig" },
         .target = target,
         .optimize = .ReleaseSmall,
+        .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },
     });
     // zig fmt: on
-
-    exe.addAnonymousModule("main", .{ .source_file = .{ .path = "stage2/main.zig" } });
     exe.setLinkerScript(.{ .path = "stage2/linker.ld" });
 
     var install = b.addInstallArtifact(exe, .{});
@@ -113,5 +121,37 @@ fn CreateBIOSStage2Target(b: *std.Build) *std.Build.Step {
     build_disk_step.step.dependOn(stage1_step);
     build_disk_step.step.dependOn(&objcopy_step.step);
 
-    return &build_disk_step.step;
+    var build_step = b.step("bios", "Build the BIOS disk image");
+    build_step.dependOn(&build_disk_step.step);
+
+    return build_step;
+}
+
+fn SetupRunBIOS(b: *std.Build, bios_step: *std.Build.Step) void {
+    const command_step = b.step("run-bios", "Run the BIOS disk in qemu");
+
+    // zig fmt: off
+    const run_step = b.addSystemCommand(&[_][]const u8{
+        "qemu-system-x86_64",
+        "-smp", "4",
+        "-m", "256M",
+        "-vga", "std",
+        "-drive", b.fmt("format=raw,file={s}", .{comptime here() ++ "/zig-out/bios/disk.dd"}),
+    });
+    // zig fmt: on
+
+    run_step.step.dependOn(bios_step);
+    command_step.dependOn(&run_step.step);
+}
+
+fn SetupDebugBIOS(b: *std.Build, bios_step: *std.Build.Step) void {
+    const command_step = b.step("debug-bios", "Debug the BIOS disk with bochs");
+
+    const run_step = b.addSystemCommand(&[_][]const u8{
+        "bochs",
+        "-q",
+    });
+
+    run_step.step.dependOn(bios_step);
+    command_step.dependOn(&run_step.step);
 }

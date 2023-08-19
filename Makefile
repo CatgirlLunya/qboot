@@ -2,7 +2,7 @@
 export ROOT_DIR = $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 export BUILD_DIR = $(ROOT_DIR)/build
 export STAGE1_DIR = $(ROOT_DIR)/stage1
-export STAGE2_DIR = $(ROOT_DIR)/stage2
+export STAGE2_DIR = $(ROOT_DIR)/stage2_old
 
 .PHONY: run all debug clean clangd tests run_tests
 
@@ -14,7 +14,7 @@ all: $(BUILD_DIR)/disk.dd $(BUILD_DIR)/stage1.bin $(BUILD_DIR)/stage2.bin
 	dd if=$(BUILD_DIR)/stage2.bin of=$(BUILD_DIR)/disk.dd seek=1048576 conv=notrunc bs=1
 
 include stage1/Makefile
-include stage2/Makefile
+include $(STAGE2_DIR)/Makefile
 include test/Makefile
 
 run: all
