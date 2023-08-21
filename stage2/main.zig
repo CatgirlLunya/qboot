@@ -7,21 +7,20 @@ const terminal = arch.terminal;
 const idt = arch.idt;
 const debug = arch.debug;
 const frame = arch.frame;
+const real_mode = arch.real_mode;
 
 pub export fn main() noreturn {
     if (!terminal.init()) @panic("Failed to initialize terminal!");
-    terminal.setColor(.light_magenta, .cyan);
+    // terminal.setColor(.light_magenta, .cyan);
     std.log.info("Entered stage 2 bootloader with initialized terminal!", .{});
-    std.log.info("New line!", .{});
 
     idt.init();
 
-    const f = frame.getFrame();
-
-    f.dump();
+    var input_frame: frame.Frame = undefined;
+    input_frame.eax = 10;
     debug.bochsBreak();
-
-    testing.div_by_zero();
+    real_mode.biosInterrupt(0x1A, &input_frame, &input_frame);
+    input_frame.dump();
 
     @panic("Reached end of main!"); // In a real bootloader, this should never happen; kernel should be run instead
 }

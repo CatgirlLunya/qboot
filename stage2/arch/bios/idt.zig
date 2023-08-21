@@ -1,7 +1,7 @@
 const std = @import("std");
 
-const isr = @import("isr.zig");
-const frame = @import("frame.zig");
+const isr = @import("asm/isr.zig");
+const frame = @import("asm/frame.zig");
 const debug = @import("debug.zig");
 
 pub const GateType = enum(u4) {

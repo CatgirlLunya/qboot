@@ -1,4 +1,4 @@
-const cpu = @import("cpu.zig");
+const cpu = @import("asm/cpu.zig");
 
 const buffer: *volatile [24][160]u8 = @ptrFromInt(0xB8000);
 

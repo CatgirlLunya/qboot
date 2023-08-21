@@ -20,6 +20,10 @@ pub const Frame = struct {
     pub fn dump(self: *const Frame) void {
         std.log.info("EAX: {}, EBX: {}, ECX: {}\nEDX: {}, EDI: {}, ESI: {}\nEBP: {}, ESP: {}, SS:{}\nCS: {}, DS: {}, ES: {}\nFS: {}, GS: {}, EFLAGS: {}", .{ self.eax, self.ebx, self.ecx, self.edx, self.edi, self.esi, self.ebp, self.esp, self.ss, self.cs, self.ds, self.es, self.fs, self.gs, self.eflags });
     }
+
+    comptime {
+        std.debug.assert(@sizeOf(@This()) == 60);
+    }
 };
 
 pub inline fn getFrame() Frame {

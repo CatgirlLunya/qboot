@@ -95,6 +95,7 @@ fn CreateBIOSStage2Target(b: *std.Build) *std.Build.Step {
     });
     // zig fmt: on
     exe.setLinkerScript(.{ .path = "stage2/linker.ld" });
+    exe.addAssemblyFile(.{ .path = "stage2/arch/bios/asm/real_mode.S" });
 
     var install = b.addInstallArtifact(exe, .{});
     install.dest_dir = .{ .custom = "bios" };

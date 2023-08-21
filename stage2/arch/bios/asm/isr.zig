@@ -1,4 +1,4 @@
-const idt = @import("idt.zig");
+const idt = @import("../idt.zig");
 const std = @import("std");
 
 pub const InterruptInfo = extern struct {
@@ -14,8 +14,6 @@ pub const InterruptInfo = extern struct {
 };
 
 pub const Stub = *const fn () callconv(.Naked) void;
-
-export const handler = &idt.isrHandler;
 
 pub fn makeStub(comptime vector: u8) Stub {
     return struct {
@@ -39,13 +37,15 @@ pub fn makeStub(comptime vector: u8) Stub {
             );
 
             asm volatile (
-                \\lea handler, %ebx
+                \\lea %[handler], %ebx
                 \\mov %esp, %edi
                 \\call *(%ebx)
                 // Used to adjust from error code and isr vector
                 \\add $8, %esp
                 \\sti
                 \\iret
+                :
+                : [handler] "m" (&idt.isrHandler),
             );
         }
     }.stub;
