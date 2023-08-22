@@ -1,8 +1,8 @@
 const std = @import("std");
 
-const isr = @import("asm/isr.zig");
-const frame = @import("asm/frame.zig");
-const debug = @import("debug.zig");
+const isr = @import("isr.zig");
+const frame = @import("frame.zig");
+const debug = @import("../debug.zig");
 
 pub const GateType = enum(u4) {
     task_gate = 0x5,
@@ -96,7 +96,7 @@ pub fn isrHandler(regs: isr.InterruptInfo) callconv(.C) void {
     std.log.info("Frame Dump:", .{});
     const f = frame.getFrame();
     f.dump();
-    debug.bochsBreak();
+    debug.breakpoint();
     @panic(getExceptionMessage(regs.interrupt_number));
 }
 

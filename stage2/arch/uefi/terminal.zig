@@ -3,15 +3,15 @@ const uefi = std.os.uefi;
 
 var con_out: ?*uefi.protocols.SimpleTextOutputProtocol = null;
 
-pub fn init() bool {
+pub fn init() !void {
     con_out = uefi.system_table.con_out;
     if (con_out) |c| {
-        _ = c.clearScreen();
-        _ = c.enableCursor(true);
-        _ = c.setCursorPosition(0, 0);
-        return true;
+        try c.clearScreen().err();
+        try c.enableCursor(true).err();
+        try c.setCursorPosition(0, 0).err();
+    } else {
+        return uefi.Status.EfiError.ProtocolUnreachable;
     }
-    return false;
 }
 
 pub fn writeChar(char: u8) void {
@@ -76,8 +76,9 @@ pub fn setColor(fg: fg_color, bg: bg_color) void {
     }
 }
 
-pub fn writeString(str: []const u8) void {
+pub fn writeString(str: []const u8) usize {
     for (str) |c| {
         writeChar(c);
     }
+    return str.len;
 }

@@ -1,4 +1,4 @@
-const idt = @import("../idt.zig");
+const idt = @import("idt.zig");
 const std = @import("std");
 
 pub const InterruptInfo = extern struct {

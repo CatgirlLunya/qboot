@@ -23,9 +23,10 @@ fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
     // zig fmt: off
     const exe = b.addExecutable(.{
         .name = "BOOTX64",
-        .root_source_file = .{ .path = "stage2/main.zig" },
+        .root_source_file = .{ .path = comptime here() ++ "/stage2/arch/uefi/entry.zig" },
         .target = target,
         .optimize = .ReleaseSmall,
+        .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },
     });
 
     // zig fmt: on
@@ -132,13 +133,16 @@ fn SetupRunBIOS(b: *std.Build, bios_step: *std.Build.Step) void {
     const command_step = b.step("run-bios", "Run the BIOS disk in qemu");
 
     // zig fmt: off
-    const run_step = b.addSystemCommand(&[_][]const u8{
+    const command_str = &[_][]const u8{
         "qemu-system-x86_64",
         "-smp", "4",
         "-m", "256M",
         "-vga", "std",
+        "-rtc", "base=localtime",
         "-drive", b.fmt("format=raw,file={s}", .{comptime here() ++ "/zig-out/bios/disk.dd"}),
-    });
+    };
+
+    const run_step = b.addSystemCommand(command_str);
     // zig fmt: on
 
     run_step.step.dependOn(bios_step);

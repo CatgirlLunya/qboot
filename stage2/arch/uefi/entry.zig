@@ -1,22 +1,14 @@
-// Just ignore this file, its super messy and not idiomatic but works
+pub const std = @import("std");
 
-extern const bss_begin: usize;
-extern const bss_end: usize;
-
-const std = @import("std");
-const bmain = @import("../../bmain.zig");
+pub const terminal = @import("terminal.zig");
+pub const bmain = @import("../../bmain.zig");
 const writer = @import("../../writer.zig");
 
-export fn _start() linksection(".entry") noreturn {
-    const ptr: [*]u8 = @ptrFromInt(bss_begin);
-    for (0..bss_end - bss_begin) |c| {
-        ptr[c] = 0;
-    }
-
+pub fn main() noreturn {
     bmain.bmain() catch |err| {
         std.log.err("Error from main: {}", .{err});
     };
-    @panic("Reached end of main!");
+    @panic("Reached end of main!"); // In a real bootloader, this should never happen; kernel should be run instead
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {

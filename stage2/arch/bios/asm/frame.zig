@@ -1,21 +1,21 @@
 const std = @import("std");
 
 pub const Frame = struct {
-    eax: u32,
-    ebx: u32,
-    ecx: u32,
-    edx: u32,
-    edi: u32,
-    esi: u32,
-    ebp: u32,
-    esp: u32,
-    ss: u32,
-    cs: u32,
-    ds: u32,
-    es: u32,
-    fs: u32,
-    gs: u32,
-    eflags: u32,
+    eax: u32 = 0,
+    ebx: u32 = 0,
+    ecx: u32 = 0,
+    edx: u32 = 0,
+    edi: u32 = 0,
+    esi: u32 = 0,
+    ebp: u32 = 0,
+    esp: u32 = 0,
+    ss: u32 = 0,
+    cs: u32 = 0,
+    ds: u32 = 0,
+    es: u32 = 0,
+    fs: u32 = 0,
+    gs: u32 = 0,
+    eflags: u32 = 0,
 
     pub fn dump(self: *const Frame) void {
         std.log.info("EAX: {}, EBX: {}, ECX: {}\nEDX: {}, EDI: {}, ESI: {}\nEBP: {}, ESP: {}, SS:{}\nCS: {}, DS: {}, ES: {}\nFS: {}, GS: {}, EFLAGS: {}", .{ self.eax, self.ebx, self.ecx, self.edx, self.edi, self.esi, self.ebp, self.esp, self.ss, self.cs, self.ds, self.es, self.fs, self.gs, self.eflags });

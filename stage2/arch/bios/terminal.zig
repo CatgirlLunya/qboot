@@ -18,14 +18,13 @@ const Context = struct {
 
 var context: Context = .{};
 
-pub fn init() bool {
+pub fn init() !void {
     for (0..24) |y| {
         for (0..80) |x| {
             putCharAt(@intCast(x), @intCast(y), 0);
         }
     }
     setCursor(true);
-    return true;
 }
 
 pub fn setColor(fg: Color, bg: Color) void {

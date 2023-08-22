@@ -4,25 +4,16 @@ const arch = @import("arch/arch.zig");
 const writer = @import("writer.zig");
 const testing = @import("testing.zig");
 const terminal = arch.terminal;
-const idt = arch.idt;
-const debug = arch.debug;
-const frame = arch.frame;
-const real_mode = arch.real_mode;
+const clock = arch.clock;
 
-pub export fn main() noreturn {
-    if (!terminal.init()) @panic("Failed to initialize terminal!");
+pub fn bmain() !void {
+    try terminal.init();
     // terminal.setColor(.light_magenta, .cyan);
     std.log.info("Entered stage 2 bootloader with initialized terminal!", .{});
+    arch.init();
 
-    idt.init();
-
-    var input_frame: frame.Frame = undefined;
-    input_frame.eax = 10;
-    debug.bochsBreak();
-    real_mode.biosInterrupt(0x1A, &input_frame, &input_frame);
-    input_frame.dump();
-
-    @panic("Reached end of main!"); // In a real bootloader, this should never happen; kernel should be run instead
+    const current_time = try clock.getTime();
+    std.log.info("Current Time: {}:{:0>2}:{:0>2}", .{ current_time.h, current_time.m, current_time.s });
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
