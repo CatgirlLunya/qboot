@@ -7,10 +7,11 @@ const terminal = arch.terminal;
 const clock = arch.clock;
 
 pub fn bmain() !void {
-    try terminal.init();
-    // terminal.setColor(.light_magenta, .cyan);
+    terminal.init() catch unreachable; // If this fails I don't think anything else will work
+    terminal.setColor(.light_magenta, .cyan);
     std.log.info("Entered stage 2 bootloader with initialized terminal!", .{});
-    arch.init();
+    try arch.init();
+    testing.div_by_zero();
 
     const current_time = try clock.getTime();
     std.log.info("Current Time: {}:{:0>2}:{:0>2}", .{ current_time.h, current_time.m, current_time.s });

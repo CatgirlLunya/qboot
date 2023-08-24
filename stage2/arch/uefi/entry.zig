@@ -6,9 +6,9 @@ const writer = @import("../../writer.zig");
 
 pub fn main() noreturn {
     bmain.bmain() catch |err| {
-        std.log.err("Error from main: {}", .{err});
+        std.log.err("Error from bmain: {!}", .{err});
     };
-    @panic("Reached end of main!"); // In a real bootloader, this should never happen; kernel should be run instead
+    @panic("Reached end of bmain!"); // In a real bootloader, this should never happen; kernel should be run instead
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {

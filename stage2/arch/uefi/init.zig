@@ -1,5 +1,5 @@
 pub const exceptions = @import("exceptions.zig");
 
-pub fn init() void {
-    exceptions.init() catch unreachable;
+pub fn init() !void {
+    try exceptions.init();
 }

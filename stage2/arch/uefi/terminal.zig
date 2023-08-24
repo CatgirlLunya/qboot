@@ -1,10 +1,11 @@
 const std = @import("std");
 const uefi = std.os.uefi;
+const protocol = @import("wrapper/protocol.zig");
 
 var con_out: ?*uefi.protocols.SimpleTextOutputProtocol = null;
 
 pub fn init() !void {
-    con_out = uefi.system_table.con_out;
+    con_out = try protocol.loadProtocol(uefi.protocols.SimpleTextOutputProtocol);
     if (con_out) |c| {
         try c.clearScreen().err();
         try c.enableCursor(true).err();

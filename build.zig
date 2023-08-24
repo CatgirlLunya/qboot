@@ -48,6 +48,8 @@ fn SetupRunUEFI(b: *std.Build, uefi_step: *std.Build.Step) void {
         "qemu-system-x86_64",
         "-bios", b.fmt("{s}/stage2/arch/uefi/OVMF.fd", .{b.build_root.path.?}),
         "-m", "256M",
+        "-smp", "4",
+        "-rtc", "base=localtime",
         "-drive", b.fmt("format=raw,file=fat:rw:{s}", .{comptime here() ++ "/zig-out/uefi/"}),
     });
     // zig fmt: on
