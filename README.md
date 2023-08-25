@@ -2,48 +2,17 @@
 QBoot is a somewhat simple bootloader designed as a learning experience for myself and others, focusing on code style and readability over performance to help others understand how bootloaders work. The name is short for QueerBoot, as the project is meant to be queer-friendly and the intended audience is queer developers, although all allies are welcome too!
 
 ## Dependencies
-To build the bootloader, you need GNU make, along with `nasm`, `fdisk`, and a compiler in your path for `i686-elf`. You can make one using the instructions at [the OSDev Wiki](https://wiki.osdev.org/GCC_Cross-Compiler).
+To build the bootloader, you need `nasm`, `fdisk`, and `dd` on BIOS, and `zig` for both BIOS and UEFI. The latest zig build the bootloader was compiled under is `0.12.0-dev.21+ac95cfe44`
 
-The Makefile also provides several targets to help debug the bootloader. These are entirely optional and are not needed for the build. 
-- To run the bootloader, you will need `qemu-system`
-- To debug it with bochs, you will need bochs compiled with gui debugger enabled. [The OSDev Wiki](https://wiki.osdev.org/Bochs) provides instructions for compiling bochs from source properly, which is often required.
-- To generate clangd `compile_commands.json`, you need `bear`
-- To run unit tests, you need to compile gtest using the instructions [here](https://stackoverflow.com/questions/38594169/how-to-reconfigure-google-test-for-a-32-bit-embedded-software), and install `gcc-multilib` and `g++-multilib`
+For those unaware, to build a zig project you run `zig build` followed by the build step you would like to run, while in the directory containing build.zig. This generates output in the zig-out folder and maintains a cache in zig-cache for faster recompilation. For example, to run the `bios` build step, run `zig build bios`.
 
-## Building and Running
-To build qboot, run
-```bash
-make
-```
-This generates disk.dd in the build directory, which can be run as a raw hard drive in qemu and bochs, and probably other emulators
-***
-To run qboot using qemu, run
-```bash
-make run
-```
-This runs [run.sh](scripts/run.sh), which uses `qemu-system-x86_64`.
-***
-To debug qboot, run 
-```bash
-make debug
-```
-This runs [bochs.sh](scripts/bochs.sh), which uses `bochs`
-***
-To generate `compile_commands.json` for clangd, run
-```bash
-make clangd 
-```
-This uses bear, and will clean and then make qboot
-(You can do `make clangd_test` to generate files for testing, as that build system is separate)
-***
-To run the unit tests for the project, stored [here](test/), run
-```bash
-make run_tests
-```
-(Note: you can also build the tests using `make tests`, which outputs an executable as `build/run_tests`)
-***
-To clean the project, run
-```bash
-make clean
-```
-This will delete and then recreate the build directory, leaving it empty
+## Build Steps Available
+The available build steps are:
+- `bios`: builds the BIOS version of the bootloader and puts it into [disk.dd](zig-out/bios/disk.dd), which is a GPT configured disk made in [make_bios_disk.sh](scripts/make_bios_disk.sh)
+- `run-bios`: does the same as `bios` but runs it using qemu
+- `debug-bios`: does the same as `bios` but runs it in bochs, which requires `bochs` on your system compiled with graphical debugger installed. [The OSDev Wiki](https://wiki.osdev.org/Bochs) provides instructions for compiling bochs from source properly, which is often required.
+- `uefi`: builds the UEFI version of the bootloader and put its into [BOOTX64.efi](zig-out/uefi/EFI/BOOT/BOOTX64.efi)
+- `run-uefi`: does the same as `uefi` but runs it using qemu
+`qemu-system-x86_64` is used for qemu, and is configured to run with 4 processors, 256 MB of RAM, and the time set to the local time. Unfortunately, some bugs with OVMF exist and do not allow for using exception handling using qemu, so some UEFI functionality is only available on real hardware. 
+
+

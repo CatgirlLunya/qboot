@@ -58,5 +58,4 @@ pub fn closeProtocols(comptime T: type, protocols: []protocolHandlePair(T)) !voi
         ).err();
     }
     uefi.pool_allocator.free(protocols);
-    protocols.ptr = null;
 }

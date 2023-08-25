@@ -4,9 +4,8 @@ const std = @import("std");
 
 fn standard_exception(exception_type: isize, context: debugger_support_protocol.SystemContext) callconv(uefi.cc) void {
     _ = context;
-    _ = exception_type;
+    std.log.err("Exception received: {}", .{exception_type});
     @panic("Exception");
-    // std.log.err("Exception received: {}", .{exception_type});
     // std.log.err("EAX: {}, EBX: {}, ECX: {}, EDX: {}", .{ context.x64.rax, context.x64.rbx, context.x64.rcx, context.x64.rdx });
     // while (true) {
     //         asm volatile ("hlt");
@@ -29,5 +28,5 @@ pub fn init() !void {
             }
         }
     }
-    // try debugger_support_protocol.close(protocols); TODO: Fix
+    try debugger_support_protocol.close(protocols);
 }

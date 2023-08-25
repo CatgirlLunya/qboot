@@ -4,13 +4,53 @@ fn here() []const u8 {
     return std.fs.path.dirname(@src().file) orelse ".";
 }
 
-pub fn build(b: *std.Build) void {
-    var bios_target = CreateBIOSStage2Target(b);
-    SetupRunBIOS(b, bios_target);
-    SetupDebugBIOS(b, bios_target);
+pub fn build(b: *std.Build) !void {
+    var bios_target = try CreateBIOSStage2Target(b);
+    try SetupRunBIOS(b, bios_target);
+    try SetupDebugBIOS(b, bios_target);
 
     var uefi_target = CreateUEFITarget(b);
-    SetupRunUEFI(b, uefi_target);
+    try SetupRunUEFI(b, uefi_target);
+}
+
+const Errors = error{
+    DependencyNotPresent,
+};
+
+const DependencyStep = struct {
+    step: std.Build.Step,
+    dependency: []const u8,
+};
+
+fn createDependencyStep(b: *std.Build, name: []const u8) !*DependencyStep {
+    var step = try b.allocator.create(DependencyStep);
+    step.*.step = std.Build.Step.init(.{
+        .makeFn = checkDependency,
+        .id = .custom,
+        .name = b.fmt("checkDependency {s}", .{name}),
+        .owner = b,
+    });
+    step.*.dependency = name;
+
+    return step;
+}
+
+fn checkDependency(step: *std.Build.Step, _: *std.Progress.Node) !void {
+    const self = @fieldParentPtr(DependencyStep, "step", step);
+    const path = std.os.getenv("PATH").?;
+    var split = std.mem.splitScalar(u8, path, ':');
+    while (split.next()) |slice| {
+        var dir = std.fs.openDirAbsolute(slice, .{}) catch {
+            std.debug.print("Could not open directory {s}!", .{slice});
+            continue;
+        };
+        dir.access(self.dependency, .{}) catch {
+            continue;
+        };
+        return;
+    }
+    std.log.err("Could not find dependency {s}! Please install it and retry", .{self.dependency});
+    return error.DependencyNotPresent;
 }
 
 fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
@@ -40,8 +80,9 @@ fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
     return &install.step;
 }
 
-fn SetupRunUEFI(b: *std.Build, uefi_step: *std.Build.Step) void {
+fn SetupRunUEFI(b: *std.Build, uefi_step: *std.Build.Step) !void {
     const command_step = b.step("run-uefi", "Run the UEFI app in qemu");
+    const dependency_step = try createDependencyStep(b, "qemu-system-x86_64");
 
     // zig fmt: off
     const run_step = b.addSystemCommand(&[_][]const u8{
@@ -54,11 +95,14 @@ fn SetupRunUEFI(b: *std.Build, uefi_step: *std.Build.Step) void {
     });
     // zig fmt: on
 
+    run_step.step.dependOn(&dependency_step.step);
     run_step.step.dependOn(uefi_step);
     command_step.dependOn(&run_step.step);
 }
 
-fn CreateBIOSStage1Target(b: *std.Build, location: []const u8) *std.Build.Step {
+fn CreateBIOSStage1Target(b: *std.Build, location: []const u8) !*std.Build.Step {
+    const dependency_step = try createDependencyStep(b, "nasm");
+
     // zig fmt: off
     const run_step = b.addSystemCommand(&[_][]const u8{
         "nasm",
@@ -69,10 +113,11 @@ fn CreateBIOSStage1Target(b: *std.Build, location: []const u8) *std.Build.Step {
     });
     // zig fmt: on
 
+    run_step.step.dependOn(&dependency_step.step);
     return &run_step.step;
 }
 
-fn CreateBIOSStage2Target(b: *std.Build) *std.Build.Step {
+fn CreateBIOSStage2Target(b: *std.Build) !*std.Build.Step {
     var target = std.zig.CrossTarget{
         .cpu_arch = .x86,
         .abi = .none,
@@ -112,9 +157,11 @@ fn CreateBIOSStage2Target(b: *std.Build) *std.Build.Step {
     });
     // zig fmt: on
 
+    const dependency_step = try createDependencyStep(b, "objcopy");
+    objcopy_step.step.dependOn(&dependency_step.step);
     objcopy_step.step.dependOn(&install.step);
 
-    const stage1_step = CreateBIOSStage1Target(b, comptime here() ++ "/stage1");
+    const stage1_step = try CreateBIOSStage1Target(b, comptime here() ++ "/stage1");
 
     const build_disk_step = b.addSystemCommand(&[_][]const u8{
         "zsh",
@@ -122,7 +169,12 @@ fn CreateBIOSStage2Target(b: *std.Build) *std.Build.Step {
         comptime here() ++ "/zig-out/bios",
     });
 
+    const fdisk_dependency_step = try createDependencyStep(b, "fdisk");
+    const dd_dependency_step = try createDependencyStep(b, "dd");
+
     build_disk_step.step.dependOn(stage1_step);
+    build_disk_step.step.dependOn(&fdisk_dependency_step.step);
+    build_disk_step.step.dependOn(&dd_dependency_step.step);
     build_disk_step.step.dependOn(&objcopy_step.step);
 
     var build_step = b.step("bios", "Build the BIOS disk image");
@@ -131,8 +183,9 @@ fn CreateBIOSStage2Target(b: *std.Build) *std.Build.Step {
     return build_step;
 }
 
-fn SetupRunBIOS(b: *std.Build, bios_step: *std.Build.Step) void {
+fn SetupRunBIOS(b: *std.Build, bios_step: *std.Build.Step) !void {
     const command_step = b.step("run-bios", "Run the BIOS disk in qemu");
+    const dependency_step = try createDependencyStep(b, "qemu-system-x86_64");
 
     // zig fmt: off
     const command_str = &[_][]const u8{
@@ -147,18 +200,21 @@ fn SetupRunBIOS(b: *std.Build, bios_step: *std.Build.Step) void {
     const run_step = b.addSystemCommand(command_str);
     // zig fmt: on
 
+    run_step.step.dependOn(&dependency_step.step);
     run_step.step.dependOn(bios_step);
     command_step.dependOn(&run_step.step);
 }
 
-fn SetupDebugBIOS(b: *std.Build, bios_step: *std.Build.Step) void {
+fn SetupDebugBIOS(b: *std.Build, bios_step: *std.Build.Step) !void {
     const command_step = b.step("debug-bios", "Debug the BIOS disk with bochs");
+    const dependency_step = try createDependencyStep(b, "bochs");
 
     const run_step = b.addSystemCommand(&[_][]const u8{
         "bochs",
         "-q",
     });
 
+    run_step.step.dependOn(&dependency_step.step);
     run_step.step.dependOn(bios_step);
     command_step.dependOn(&run_step.step);
 }
