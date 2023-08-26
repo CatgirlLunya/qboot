@@ -17,6 +17,8 @@ The available build steps are:
 `qemu-system-x86_64` is used for `run` commands, and is configured to run with 4 processors, 256 MB of RAM, and the time set to the local time. Unfortunately, some bugs with OVMF exist and do not allow for using exception handling using qemu, so some UEFI functionality is only available on real hardware. 
 
 ## Screenshots
-![Screenshot of the BIOS build in QEMU](screenshots/bios-working.png?raw=true "Qboot's BIOS build working on qemu")
-![Screenshot of the UEFI build in QEMU](screenshots/uefi-working.png?raw=true "Qboot's UEFI build working on qemu")
+### BIOS build
+![Screenshot of the BIOS build in QEMU](screenshots/bios-working.png?raw=true)
+### UEFI build
+![Screenshot of the UEFI build in QEMU](screenshots/uefi-working.png?raw=true)
 
