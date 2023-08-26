@@ -1,10 +1,9 @@
 const cpu = @import("asm/cpu.zig");
+const api_terminal = @import("../../api/api.zig").terminal;
 
 const buffer: *volatile [24][160]u8 = @ptrFromInt(0xB8000);
 
-pub const Color = enum(u8) { black = 0, blue, green, cyan, red, magenta, brown, gray, drak_gray, light_blue, light_green, light_cyan, light_red, light_magenta, yellow, white };
-
-pub fn makeColorInt(fg: Color, bg: Color) u8 {
+pub fn makeColorInt(fg: api_terminal.fg_color, bg: api_terminal.bg_color) u8 {
     return @intFromEnum(fg) | @intFromEnum(bg) << 4;
 }
 
@@ -27,7 +26,7 @@ pub fn init() !void {
     setCursor(true);
 }
 
-pub fn setColor(fg: Color, bg: Color) void {
+pub fn setColor(fg: api_terminal.fg_color, bg: api_terminal.bg_color) !void {
     context.color = makeColorInt(fg, bg);
 }
 
@@ -52,7 +51,7 @@ pub fn putChar(c: u8) void {
     context.column += 1;
 }
 
-pub fn writeString(str: []const u8) usize {
+pub fn writeString(str: []const u8) !usize {
     for (str) |c| {
         putChar(c);
     }

@@ -16,7 +16,7 @@ pub fn protocolHandlePair(comptime T: type) type {
 
 pub fn openProtocols(comptime T: type) ![]protocolHandlePair(T) {
     const bs = uefi.system_table.boot_services.?;
-    var num_handles: usize = undefined;
+    var num_handles: usize = 0;
     var handle_buffer: [*]uefi.Handle = undefined;
     try bs.locateHandleBuffer(
         .ByProtocol,

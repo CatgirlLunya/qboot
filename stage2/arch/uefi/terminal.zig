@@ -1,6 +1,6 @@
-const std = @import("std");
-const uefi = std.os.uefi;
+const uefi = @import("std").os.uefi;
 const protocol = @import("wrapper/protocol.zig");
+const api_terminal = @import("../../api/api.zig").terminal;
 
 var con_out: ?*uefi.protocols.SimpleTextOutputProtocol = null;
 
@@ -15,71 +15,35 @@ pub fn init() !void {
     }
 }
 
-pub fn writeChar(char: u8) void {
+pub fn writeChar(char: u8) !void {
     if (con_out) |c| {
-        if (char == '\n') newLine();
+        if (char == '\n') try writeChar('\r');
         const utf16arr = [2]u16{ char, 0 };
-        _ = c.outputString(@as(*const [1:0]u16, @ptrCast(&utf16arr)));
+        try c.outputString(@as(*const [1:0]u16, @ptrCast(&utf16arr))).err();
     }
-}
-
-pub fn newLine() void {
-    writeChar('\r');
 }
 
 pub fn setCursor(enabled: bool) void {
     if (con_out) |c| {
-        _ = c.enableCursor(enabled);
+        try c.enableCursor(enabled).err();
     }
 }
 
-pub fn setCursorPosition(x: usize, y: usize) void {
+pub fn setCursorPosition(x: usize, y: usize) !void {
     if (con_out) |c| {
-        _ = c.setCursorPosition(x, y);
+        try c.setCursorPosition(x, y).err();
     }
 }
 
-// zig fmt: off
-pub const fg_color = enum(u8) {
-    black = 0,
-    blue,
-    green,
-    cyan,
-    red,
-    magenta,
-    brown,
-    gray,
-    drak_gray,
-    light_blue,
-    light_green,
-    light_cyan,
-    light_red,
-    light_magenta,
-    yellow,
-    white
-};
-
-pub const bg_color = enum(u8) {
-    black = 0,
-    blue,
-    green,
-    cyan,
-    red,
-    magenta,
-    brown,
-    gray
-};
-// zig fmt: on
-
-pub fn setColor(fg: fg_color, bg: bg_color) void {
+pub fn setColor(fg: api_terminal.fg_color, bg: api_terminal.bg_color) !void {
     if (con_out) |c| {
-        _ = c.setAttribute(@intFromEnum(fg) | @intFromEnum(bg) << 4);
+        try c.setAttribute(@intFromEnum(fg) | @intFromEnum(bg) << 4).err();
     }
 }
 
-pub fn writeString(str: []const u8) usize {
+pub fn writeString(str: []const u8) !usize {
     for (str) |c| {
-        writeChar(c);
+        try writeChar(c);
     }
     return str.len;
 }

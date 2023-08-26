@@ -11,6 +11,7 @@ pub fn build(b: *std.Build) !void {
 
     var uefi_target = CreateUEFITarget(b);
     try SetupRunUEFI(b, uefi_target);
+    try SetupPackageUEFI(b, uefi_target);
 }
 
 const Errors = error{
@@ -68,8 +69,8 @@ fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
         .optimize = .ReleaseSmall,
         .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },
     });
-
     // zig fmt: on
+    // exe.addModule("api", b.createModule(.{ .source_file = .{ .path = comptime here() ++ "/stage2/api/api.zig" } }));
 
     var install = b.addInstallArtifact(exe, .{});
     install.dest_dir = .{ .custom = "uefi/EFI/BOOT/" };
@@ -97,6 +98,32 @@ fn SetupRunUEFI(b: *std.Build, uefi_step: *std.Build.Step) !void {
 
     run_step.step.dependOn(&dependency_step.step);
     run_step.step.dependOn(uefi_step);
+    command_step.dependOn(&run_step.step);
+}
+
+fn SetupPackageUEFI(b: *std.Build, uefi_step: *std.Build.Step) !void {
+    const command_step = b.step("package-uefi", "Package the UEFI bootloader into a hard disk image");
+    const dd_dependency_step = try createDependencyStep(b, "dd");
+    const parted_dependency_step = try createDependencyStep(b, "parted");
+    const mformat_dependency_step = try createDependencyStep(b, "mformat");
+    const mcopy_dependency_step = try createDependencyStep(b, "mcopy");
+    const rm_dependency_step = try createDependencyStep(b, "rm");
+
+    // zig fmt: off
+    const run_step = b.addSystemCommand(&[_][]const u8{
+        "zsh",
+        comptime here() ++ "/scripts/make_uefi_disk.sh",
+        comptime here() ++ "/zig-out/uefi/EFI",
+        comptime here() ++ "/zig-out/uefi/"
+    });
+    // zig fmt: on
+    run_step.step.dependOn(&dd_dependency_step.step);
+    run_step.step.dependOn(&parted_dependency_step.step);
+    run_step.step.dependOn(&mformat_dependency_step.step);
+    run_step.step.dependOn(&mcopy_dependency_step.step);
+    run_step.step.dependOn(&rm_dependency_step.step);
+    run_step.step.dependOn(uefi_step);
+
     command_step.dependOn(&run_step.step);
 }
 

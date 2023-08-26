@@ -8,11 +8,12 @@ For those unaware, to build a zig project you run `zig build` followed by the bu
 
 ## Build Steps Available
 The available build steps are:
-- `bios`: builds the BIOS version of the bootloader and puts it into [disk.dd](zig-out/bios/disk.dd), which is a GPT configured disk made in [make_bios_disk.sh](scripts/make_bios_disk.sh)
-- `run-bios`: does the same as `bios` but runs it using qemu. This uses `qemu-system-x86_64`, and uses 4 processors, 256 MB of RAM, and sets the time to the local time.
+- `bios`: builds the BIOS version of the bootloader and puts it into `zig-out/bios/disk.dd`, which is a GPT configured disk made in `scripts/make_bios_disk.sh`
+- `run-bios`: does the same as `bios` but runs it using qemu.
 - `debug-bios`: does the same as `bios` but runs it in bochs, which requires `bochs` on your system compiled with graphical debugger installed. [The OSDev Wiki](https://wiki.osdev.org/Bochs) provides instructions for compiling bochs from source properly, which is often required.
-- `uefi`: builds the UEFI version of the bootloader and put its into [BOOTX64.efi](zig-out/uefi/EFI/BOOT/BOOTX64.efi)
+- `uefi`: builds the UEFI version of the bootloader and put its into `zig-out/uefi/EFI/BOOT/BOOTX64.efi`
 - `run-uefi`: does the same as `uefi` but runs it using qemu.
-`qemu-system-x86_64` is used for qemu, and is configured to run with 4 processors, 256 MB of RAM, and the time set to the local time. Unfortunately, some bugs with OVMF exist and do not allow for using exception handling using qemu, so some UEFI functionality is only available on real hardware. 
+- `package-uefi`: packages the UEFI build, normally just a file that is run raw in qemu, into a hard disk image with the executable in an EFI bootable partition. This disk is located at `zig-out/uefi/disk.dd`
+`qemu-system-x86_64` is used for `run` commands, and is configured to run with 4 processors, 256 MB of RAM, and the time set to the local time. Unfortunately, some bugs with OVMF exist and do not allow for using exception handling using qemu, so some UEFI functionality is only available on real hardware. 
 
 

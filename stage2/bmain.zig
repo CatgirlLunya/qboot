@@ -1,24 +1,28 @@
 const std = @import("std");
 
-const arch = @import("arch/arch.zig");
+const api = @import("arch/api.zig").api;
 const writer = @import("writer.zig");
 const testing = @import("testing.zig");
-const terminal = arch.terminal;
-const clock = arch.clock;
 
 pub fn bmain() !void {
-    terminal.init() catch unreachable; // If this fails I don't think anything else will work
-    terminal.setColor(.light_magenta, .cyan);
-    std.log.info("Entered stage 2 bootloader with initialized terminal!", .{});
-    try arch.init();
-    testing.div_by_zero();
-
-    const current_time = try clock.getTime();
-    std.log.info("Current Time: {}:{:0>2}:{:0>2}", .{ current_time.h, current_time.m, current_time.s });
+    if (api.terminal) |terminal| {
+        if (terminal.init) |init| try init();
+        if (terminal.setColor) |setColor| try setColor(.light_magenta, .cyan);
+        std.log.info("Terminal successfully initialized!", .{});
+    }
+    if (api.init) |init| {
+        try init();
+    }
+    if (api.clock) |clock| {
+        const current_time = try clock.getTime();
+        std.log.info("Current Time: {}:{:0>2}:{:0>2}", .{ current_time.h, current_time.m, current_time.s });
+    }
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
-    terminal.setColor(.red, .black);
+    if (api.terminal) |terminal| {
+        terminal.setColor.?(.red, .black) catch {};
+    }
     std.log.err("[PANIC] {s}", .{msg});
     _ = error_return_trace;
     _ = ret_addr;

@@ -1,12 +1,13 @@
-dd if=/dev/zero of=$1/disk.dd bs=1048576 count=128
+dd if=/dev/zero of=$2/disk.dd bs=1048576 count=128
 
-parted -s -a minimal $1/disk.dd mklabel gpt
-parted -s -a minimal $1/disk.dd mkpart primary fat32 1MiB 64MiB
-parted -s -a minimal $1/disk.dd set 1 boot on
+parted -s -a minimal $2/disk.dd mklabel gpt
+parted -s -a minimal $2/disk.dd mkpart primary fat32 1MiB 65MiB
+parted -s -a minimal $2/disk.dd set 1 boot on
 
-dd if=/dev/zero of=$1/temp_uefi_fs.dd bs=1048576 count=64
-mformat -i $1/temp_uefi_fs.dd -F
+dd if=/dev/zero of=$2/temp_uefi_fs.dd bs=1048576 count=64
+mformat -i $2/temp_uefi_fs.dd -F
 
-mcopy $1/uefi64.efi -i $1/temp_uefi_fs.dd ::/
+mcopy $1 -s -i $2/temp_uefi_fs.dd ::/
 
-dd if=$1/temp_uefi_fs.dd of=$1/disk.dd bs=1048576 count=64 seek=1 conv=notrunc
+dd if=$2/temp_uefi_fs.dd of=$2/disk.dd bs=1048576 count=64 seek=1 conv=notrunc
+rm $2/temp_uefi_fs.dd
