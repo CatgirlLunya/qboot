@@ -1,7 +1,8 @@
 const cpu = @import("asm/cpu.zig");
 const api_terminal = @import("../../api/api.zig").terminal;
+const std = @import("std");
 
-const buffer: *volatile [24][160]u8 = @ptrFromInt(0xB8000);
+const buffer: *volatile [25][160]u8 = @ptrFromInt(0xB8000);
 
 pub fn makeColorInt(fg: api_terminal.fg_color, bg: api_terminal.bg_color) u8 {
     return @intFromEnum(fg) | @intFromEnum(bg) << 4;
@@ -33,6 +34,13 @@ pub fn setColor(fg: api_terminal.fg_color, bg: api_terminal.bg_color) !void {
 pub fn newLine() void {
     context.row += 1;
     context.column = 0;
+    if (context.row > 24) {
+        for (0..24) |i| {
+            std.mem.copyForwards(u8, @volatileCast(&buffer[i]), @volatileCast(&buffer[i + 1]));
+        }
+        context.row -= 1;
+        @memset(&buffer[24], 0);
+    }
 }
 
 pub fn putCharAt(x: u8, y: u8, c: u8) void {

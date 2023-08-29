@@ -18,7 +18,7 @@ pub const Frame = struct {
     eflags: u32 = 0,
 
     pub fn dump(self: *const Frame) void {
-        std.log.info("EAX: {}, EBX: {}, ECX: {}\nEDX: {}, EDI: {}, ESI: {}\nEBP: {}, ESP: {}, SS:{}\nCS: {}, DS: {}, ES: {}\nFS: {}, GS: {}, EFLAGS: {}", .{ self.eax, self.ebx, self.ecx, self.edx, self.edi, self.esi, self.ebp, self.esp, self.ss, self.cs, self.ds, self.es, self.fs, self.gs, self.eflags });
+        std.log.info("EAX: {X}, EBX: {X}, ECX: {X}\nEDX: {X}, EDI: {X}, ESI: {X}\nEBP: {X}, ESP: {X}, SS:{X}\nCS: {X}, DS: {X}, ES: {X}\nFS: {X}, GS: {X}, EFLAGS: {X}", .{ self.eax, self.ebx, self.ecx, self.edx, self.edi, self.esi, self.ebp, self.esp, self.ss, self.cs, self.ds, self.es, self.fs, self.gs, self.eflags });
     }
 
     comptime {
