@@ -15,11 +15,13 @@ pub fn bmain() !void {
         const current_time = try clock.getTime();
         std.log.info("Current Time: {}:{:0>2}:{:0>2}", .{ current_time.h, current_time.m, current_time.s });
     }
+    if (api.allocator.init) |init| {
+        try init();
+    }
     try api.memory.init();
-    api.memory.map.minify();
-    for (0..api.memory.map.count) |entry| {
-        const e = api.memory.map.entries[entry];
-        @import("std").log.info("Memory Map Entry: {}, {}, {}, {}", .{ entry, e.base, e.length, e.memory_type });
+    try api.memory.map.minify();
+    if (api.allocator.stop) |stop| {
+        try stop();
     }
 }
 

@@ -1,5 +1,5 @@
-const memory = @import("../../api/api.zig").memory;
-const uefi = @import("wrapper/uefi.zig");
+const memory = @import("../../../api/api.zig").memory;
+const uefi = @import("std").os.uefi;
 
 pub var memoryMap: memory.MemoryMap = undefined;
 pub var mapKey: usize = undefined; // Needed to exit boot services
@@ -35,7 +35,7 @@ pub fn loadMemoryMap() !void {
         const entry = @as(*uefi.tables.MemoryDescriptor, @ptrCast(@alignCast(ptr))).*;
         memoryMap.entries[e] = .{
             .base = entry.physical_start,
-            .length = entry.number_of_pages * 4096,
+            .length = entry.number_of_pages * @import("std").mem.page_size,
             .memory_type = convertType(@intFromEnum(entry.type)),
         };
     }

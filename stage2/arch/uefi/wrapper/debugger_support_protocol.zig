@@ -1,4 +1,4 @@
-const uefi = @import("uefi.zig");
+const uefi = @import("std").os.uefi;
 const protocol = @import("protocol.zig");
 const std = @import("std");
 

@@ -1,4 +1,4 @@
-pub const uefi = @import("uefi.zig");
+pub const uefi = @import("std").os.uefi;
 
 pub fn loadProtocol(comptime T: type) !*T {
     const bs = uefi.system_table.boot_services.?;
