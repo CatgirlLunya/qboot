@@ -14,7 +14,8 @@ pub const MemoryType = enum(u32) {
     kernel,
 };
 
-// May need to be laid out properly in memory for BIOS to work, so is made extern
+// May need to be laid out properly in memory for some APIs to work, so is made extern
+// TODO get rid of this and make BIOS read in properly
 pub const MemoryMapEntry = extern struct {
     base: u64,
     length: u64,

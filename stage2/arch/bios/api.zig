@@ -22,7 +22,7 @@ pub fn api() API {
         .allocator = .{
             .init = pmm.init,
             .stop = null,
-            .allocator = undefined,
+            .allocator = pmm.allocator,
         },
         .init = init,
     };

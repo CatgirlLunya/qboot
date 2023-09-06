@@ -18,8 +18,15 @@ pub fn bmain() !void {
     if (api.allocator.init) |init| {
         try init();
     }
-    try api.memory.init();
-    try api.memory.map.minify();
+
+    const ptr = try api.allocator.allocator.alloc(u8, 0x10);
+    std.log.info("Ptr: {*}", .{ptr});
+    const ptr2 = try api.allocator.allocator.alloc(u8, 0x20);
+    std.log.info("Ptr2: {*}", .{ptr2});
+    api.allocator.allocator.free(ptr2);
+    const ptr3 = try api.allocator.allocator.alloc(u8, 0x5);
+    std.log.info("Ptr3: {*}", .{ptr3});
+
     if (api.allocator.stop) |stop| {
         try stop();
     }

@@ -45,5 +45,5 @@ pub fn loadMemoryMap() !void {
 
 pub fn init() !void {
     try loadMemoryMap();
-    memoryMap.minify();
+    try memoryMap.minify();
 }
