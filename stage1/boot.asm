@@ -35,7 +35,7 @@ boot:
             .segment: dw 0x7E0 ; segment to store stage2 at
             .loc: dq 2048 ; 2048 is the LBA
         
-        mov al, 2 ; will loop twice, setting this up b/c i'll likely do this later anyways
+        mov al, 4 ; will loop twice, setting this up b/c i'll likely do this later anyways
         mov si, disk_packet
         mov ah, 42h ; int 13h, 42h is read
 
@@ -44,7 +44,7 @@ boot:
             jc error.int13hFail ; carry set on interrupt fail, no space to add checks for output code
             add word [disk_packet.segment], 0x800
             sub al, 1
-            or al, al
+            test al, al
             jnz .loop
 
     mov si, msgLoadedStage2

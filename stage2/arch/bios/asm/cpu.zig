@@ -20,3 +20,9 @@ pub inline fn inb(port: u16) u8 {
         : [port] "N{dx}" (port),
     );
 }
+
+pub fn inaccurateWait() void {
+    for (0..1000) |_| {
+        asm volatile ("nop");
+    }
+}

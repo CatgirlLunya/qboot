@@ -35,8 +35,11 @@ pub fn newLine() void {
     context.row += 1;
     context.column = 0;
     if (context.row > 24) {
-        for (0..24) |i| {
-            std.mem.copyForwards(u8, @volatileCast(&buffer[i]), @volatileCast(&buffer[i + 1]));
+        // @panic("Fail");
+        for (0..24) |y| {
+            for (0..160) |x| {
+                buffer[y][x] = buffer[y + 1][x];
+            }
         }
         context.row -= 1;
         @memset(&buffer[24], 0);
@@ -49,21 +52,14 @@ pub fn putCharAt(x: u8, y: u8, c: u8) void {
     setCursorPosition(x, y);
 }
 
-pub fn putChar(c: u8) void {
+pub fn putChar(c: u8) !void {
     if (c == '\n') {
         newLine();
-        return;
+    } else {
+        if (context.column == 80) newLine();
+        putCharAt(context.column, context.row, c);
+        context.column += 1;
     }
-    if (context.column == 80) newLine();
-    putCharAt(context.column, context.row, c);
-    context.column += 1;
-}
-
-pub fn writeString(str: []const u8) !usize {
-    for (str) |c| {
-        putChar(c);
-    }
-    return str.len;
 }
 
 pub fn setCursor(enabled: bool) void {

@@ -2,8 +2,8 @@ const idt = @import("idt.zig");
 const std = @import("std");
 
 pub const InterruptInfo = extern struct {
-    error_code: u32,
     interrupt_number: u32,
+    error_code: u32,
     eip: u32,
     cs: u32,
     eflags: u32,
@@ -31,21 +31,17 @@ pub fn makeStub(comptime vector: u8) Stub {
                 asm volatile ("push $0"); // Push error code 0 if the function doesn't have one, for consistency
             }
 
-            asm volatile ("push %[vector]"
-                :
-                : [vector] "i" (vector),
-            );
-
+            // Pushes the vector, then moves the function table into ebx, moves the vector into eax, finds the offset into the table, and calls that
             asm volatile (
-                \\lea %[handler], %ebx
-                \\mov %esp, %edi
-                \\call *(%ebx)
+                \\push %[vec]
+                // \\mov %esp, %edi - stupid piece of shit line that made me debug for like 10 hours
+                \\call *(%ebx,%eax,4)
                 // Used to adjust from error code and isr vector
                 \\add $8, %esp
-                \\sti
                 \\iret
                 :
-                : [handler] "m" (&idt.isrHandler),
+                : [table] "{ebx}" (&idt.func_table),
+                  [vec] "{eax}" (@as(u32, vector)),
             );
         }
     }.stub;

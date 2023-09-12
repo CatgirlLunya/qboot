@@ -44,6 +44,8 @@ pub const Descriptor = packed struct {
     pointer: usize,
 };
 
+pub const ISRHandler = *const fn (isr.InterruptInfo) callconv(.C) void;
+
 // zig fmt: off
 fn getExceptionMessage(vec: usize) []const u8 {
     return switch (vec) {
@@ -75,9 +77,8 @@ fn getExceptionMessage(vec: usize) []const u8 {
 // Aligning gives performance https://wiki.osdev.org/Interrupts_Tutorial
 var table: [256]Entry align(0x10) = undefined;
 
-pub fn insertEntry(entry: Entry, index: usize) void {
-    table[index] = entry;
-}
+// Stores the functions that are run on an interrupt
+pub var func_table: [256]ISRHandler = undefined;
 
 pub fn makeEntry(func: isr.Stub) Entry {
     const int_addr = @intFromPtr(func);
@@ -90,26 +91,30 @@ pub fn makeEntry(func: isr.Stub) Entry {
     return entry;
 }
 
-pub fn isrHandler(regs: isr.InterruptInfo) callconv(.C) void {
+pub fn defaultISRHandler(regs: isr.InterruptInfo) callconv(.C) void {
     std.log.info("ISR Info Dump:", .{});
     regs.dump();
     std.log.info("Frame Dump:", .{});
     const f = frame.getFrame();
     f.dump();
-    debug.breakpoint();
     @panic(getExceptionMessage(regs.interrupt_number));
+}
+
+pub fn installInterrupt(comptime vec: u8, func: ISRHandler) void {
+    func_table[vec] = func;
+    table[vec] = makeEntry(isr.makeStub(vec));
 }
 
 pub fn init() void {
     inline for (0..32) |vec| {
-        insertEntry(makeEntry(isr.makeStub(vec)), vec);
+        installInterrupt(vec, defaultISRHandler);
     }
 
     const descriptor = Descriptor{
         .pointer = @intFromPtr(&table),
-        .size = @sizeOf(Entry) * 32,
+        .size = @sizeOf(Entry) * 256,
     };
-    std.log.debug("IDT initialized with IDTR at 0x{X} and IDT at 0x{X}", .{ @intFromPtr(&descriptor), @intFromPtr(&table) });
+
     const idtr = @intFromPtr(&descriptor);
 
     asm volatile ("lidt (%[idtr])"

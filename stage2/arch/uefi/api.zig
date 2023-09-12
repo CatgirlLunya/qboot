@@ -12,7 +12,7 @@ pub fn api() API {
         .terminal = .{
             .init = terminal.init,
             .setColor = terminal.setColor,
-            .writeStr = terminal.writeString,
+            .writeChar = terminal.writeChar,
         },
         .memory = .{
             .init = memory_map.init,
@@ -23,6 +23,12 @@ pub fn api() API {
             .stop = null,
             .allocator = @import("std").os.uefi.pool_allocator,
         },
+        .keyboard = null, // Remove later when getInput is done
+        //.keyboard = .{
+        //    .init = null,
+        //    .getInput = undefined,
+        //    .deinit = null,
+        //},
         .init = init,
     };
 }

@@ -40,10 +40,3 @@ pub fn setColor(fg: api_terminal.fg_color, bg: api_terminal.bg_color) !void {
         try c.setAttribute(@intFromEnum(fg) | @intFromEnum(bg) << 4).err();
     }
 }
-
-pub fn writeString(str: []const u8) !usize {
-    for (str) |c| {
-        try writeChar(c);
-    }
-    return str.len;
-}

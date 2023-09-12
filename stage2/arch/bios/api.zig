@@ -3,6 +3,7 @@ const terminal = @import("terminal.zig");
 const clock = @import("clock.zig");
 const memory_map = @import("mm/memory_map.zig");
 const pmm = @import("mm/pmm.zig");
+const keyboard = @import("keyboard.zig");
 const init = @import("init.zig").init;
 
 pub fn api() API {
@@ -13,7 +14,7 @@ pub fn api() API {
         .terminal = .{
             .init = terminal.init,
             .setColor = terminal.setColor,
-            .writeStr = terminal.writeString,
+            .writeChar = terminal.putChar,
         },
         .memory = .{
             .init = memory_map.init,
@@ -23,6 +24,11 @@ pub fn api() API {
             .init = pmm.init,
             .stop = null,
             .allocator = pmm.allocator,
+        },
+        .keyboard = .{
+            .init = keyboard.init,
+            .getInput = keyboard.getInput,
+            .deinit = keyboard.deinit,
         },
         .init = init,
     };

@@ -1,5 +1,4 @@
 const std = @import("std");
-
 const api = @import("arch/api.zig").api;
 
 pub fn bmain() !void {
@@ -19,17 +18,31 @@ pub fn bmain() !void {
         try init();
     }
 
-    const ptr = try api.allocator.allocator.alloc(u8, 0x10);
-    std.log.info("Ptr: {*}", .{ptr});
-    const ptr2 = try api.allocator.allocator.alloc(u8, 0x20);
-    std.log.info("Ptr2: {*}", .{ptr2});
-    api.allocator.allocator.free(ptr2);
-    const ptr3 = try api.allocator.allocator.alloc(u8, 0x5);
-    std.log.info("Ptr3: {*}", .{ptr3});
+    if (api.keyboard) |keyboard| {
+        if (keyboard.init) |init| try init();
+    }
+
+    std.log.info("Now you can type: ", .{});
+    while (true) {
+        if (api.keyboard) |keyboard| {
+            const key = keyboard.getInput();
+            if (key) |k| {
+                if (k.code == .escape) break;
+                if (k.event_type == .released or k.code == .invalid) continue;
+                if (k.code.printable(k.modifiers.shift)) |p| {
+                    if (api.terminal) |terminal| try terminal.writeChar(p);
+                } else {
+                    std.log.info("Unrecognized key! Code: {x}", .{@as(u32, @intFromEnum(k.code))});
+                }
+            }
+        }
+    }
 
     if (api.allocator.stop) |stop| {
         try stop();
     }
+
+    if (api.keyboard.?.deinit) |deinit| try deinit();
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
@@ -39,5 +52,8 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_
     std.log.err("[PANIC] {s}", .{msg});
     _ = error_return_trace;
     _ = ret_addr;
+    if (api.terminal) |terminal| {
+        if (terminal.setColor) |setColor| setColor(.white, .black) catch {};
+    }
     while (true) asm volatile ("hlt");
 }

@@ -25,7 +25,8 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_
 
 pub const std_options = struct {
     pub fn logFn(comptime _: std.log.Level, comptime _: @Type(.EnumLiteral), comptime format: []const u8, args: anytype) void {
-        writer.writer.print(format ++ "\n", args) catch unreachable;
+        writer.writer.print(format, args) catch @panic("");
+        writer.writer.writeByte('\n') catch @panic("");
     }
 
     pub const log_level = .info;
