@@ -22,7 +22,7 @@ pub fn api() API {
         },
         .allocator = .{
             .init = pmm.init,
-            .stop = null,
+            .deinit = pmm.deinit,
             .allocator = pmm.allocator,
         },
         .keyboard = .{

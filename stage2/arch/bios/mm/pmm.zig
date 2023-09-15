@@ -11,7 +11,6 @@ pub fn init() !void {
 
     // Only going to use 8 MB of ram hopefully
     var ram = memory_map.memoryMap.usableMax();
-    std.log.info("RAM: {}", .{ram});
     if (ram < (1 << 23)) {
         return error.OutOfMemory;
     }
@@ -26,10 +25,10 @@ pub fn init() !void {
     fba = std.heap.FixedBufferAllocator.init(base[0..@as(usize, @intCast(entry.length))]);
 }
 
-pub fn deinit() void {
+pub fn deinit() !void {
     fba.reset();
     if (entry_no) |e| {
         memory_map.memoryMap.entries[e].length = 0;
-        memory_map.memoryMap.minify();
+        try memory_map.memoryMap.minify();
     }
 }

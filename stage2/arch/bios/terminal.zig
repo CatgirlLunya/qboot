@@ -3,6 +3,8 @@ const api_terminal = @import("../../api/api.zig").terminal;
 const std = @import("std");
 
 const buffer: *volatile [25][160]u8 = @ptrFromInt(0xB8000);
+// Faster for backspaces than iterating through the previous row to find the last character if needed
+var position_per_row: [25]u8 = [_]u8{0} ** 25;
 
 pub fn makeColorInt(fg: api_terminal.fg_color, bg: api_terminal.bg_color) u8 {
     return @intFromEnum(fg) | @intFromEnum(bg) << 4;
@@ -31,11 +33,9 @@ pub fn setColor(fg: api_terminal.fg_color, bg: api_terminal.bg_color) !void {
     context.color = makeColorInt(fg, bg);
 }
 
-pub fn newLine() void {
+fn newLine() void {
     context.row += 1;
-    context.column = 0;
     if (context.row > 24) {
-        // @panic("Fail");
         for (0..24) |y| {
             for (0..160) |x| {
                 buffer[y][x] = buffer[y + 1][x];
@@ -44,17 +44,36 @@ pub fn newLine() void {
         context.row -= 1;
         @memset(&buffer[24], 0);
     }
+    position_per_row[context.row - 1] = context.column;
+    context.column = 0;
+    setCursorPosition(0, context.row);
 }
 
-pub fn putCharAt(x: u8, y: u8, c: u8) void {
+fn putCharAt(x: u8, y: u8, c: u8) void {
     buffer[y][x * 2] = c;
     buffer[y][x * 2 + 1] = context.color;
-    setCursorPosition(x, y);
+    setCursorPosition(x + 1, y);
+}
+
+fn backspace() void {
+    if (context.column == 0) {
+        if (context.row == 0) return;
+        context.row -= 1;
+        context.column = position_per_row[context.row];
+    } else {
+        context.column -= 1;
+    }
+    putCharAt(context.column, context.row, 0);
+    setCursorPosition(context.column, context.row);
 }
 
 pub fn putChar(c: u8) !void {
-    if (c == '\n') {
+    if (c == @intFromEnum(api_terminal.SpecialChars.newline)) {
         newLine();
+    } else if (c == @intFromEnum(api_terminal.SpecialChars.backspace)) {
+        backspace();
+    } else if (c == @intFromEnum(api_terminal.SpecialChars.tab)) {
+        for (0..4) |_| try putChar(' ');
     } else {
         if (context.column == 80) newLine();
         putCharAt(context.column, context.row, c);

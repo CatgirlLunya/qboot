@@ -2,6 +2,7 @@ const API = @import("../api.zig").API;
 const terminal = @import("terminal.zig");
 const clock = @import("clock.zig");
 const memory_map = @import("mm/memory_map.zig");
+const keyboard = @import("keyboard.zig");
 const init = @import("init.zig").init;
 
 pub fn api() API {
@@ -20,15 +21,14 @@ pub fn api() API {
         },
         .allocator = .{
             .init = null,
-            .stop = null,
+            .deinit = null,
             .allocator = @import("std").os.uefi.pool_allocator,
         },
-        .keyboard = null, // Remove later when getInput is done
-        //.keyboard = .{
-        //    .init = null,
-        //    .getInput = undefined,
-        //    .deinit = null,
-        //},
+        .keyboard = .{
+            .init = keyboard.init,
+            .getInput = keyboard.getInput,
+            .deinit = null,
+        },
         .init = init,
     };
 }

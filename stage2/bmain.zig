@@ -5,21 +5,27 @@ pub fn bmain() !void {
     if (api.terminal) |terminal| {
         if (terminal.init) |init| try init();
         if (terminal.setColor) |setColor| try setColor(.white, .black);
-        std.log.info("Terminal successfully initialized!", .{});
+        std.log.info("Terminal initialized!", .{});
     }
     if (api.init) |init| {
         try init();
-    }
-    if (api.clock) |clock| {
-        const current_time = try clock.getTime();
-        std.log.info("Current Time: {}:{:0>2}:{:0>2}", .{ current_time.h, current_time.m, current_time.s });
+        std.log.info("Platform initialized!", .{});
     }
     if (api.allocator.init) |init| {
         try init();
+        std.log.info("Allocator initialized!", .{});
     }
 
     if (api.keyboard) |keyboard| {
-        if (keyboard.init) |init| try init();
+        if (keyboard.init) |init| {
+            try init();
+            std.log.info("Keyboard initialized!", .{});
+        }
+    }
+
+    if (api.clock) |clock| {
+        const current_time = try clock.getTime();
+        std.log.info("Current Time: {}:{:0>2}:{:0>2}", .{ current_time.h, current_time.m, current_time.s });
     }
 
     std.log.info("Now you can type: ", .{});
@@ -27,22 +33,29 @@ pub fn bmain() !void {
         if (api.keyboard) |keyboard| {
             const key = keyboard.getInput();
             if (key) |k| {
-                if (k.code == .escape) break;
-                if (k.event_type == .released or k.code == .invalid) continue;
-                if (k.code.printable(k.modifiers.shift)) |p| {
-                    if (api.terminal) |terminal| try terminal.writeChar(p);
-                } else {
-                    std.log.info("Unrecognized key! Code: {x}", .{@as(u32, @intFromEnum(k.code))});
+                if (k.code.function == .escape) break;
+                if (k.event_type == .released) continue;
+                switch (k.code) {
+                    .printable => |ch| if (api.terminal) |terminal| try terminal.writeChar(@intCast(ch)),
+                    .function => {},
+                    // .function => |func| std.log.info("Function: {x}", .{@as(u32, @intFromEnum(func))}),
                 }
             }
         }
     }
+    std.log.info("", .{});
 
-    if (api.allocator.stop) |stop| {
-        try stop();
+    if (api.allocator.deinit) |deinit| {
+        try deinit();
+        std.log.info("Allocator de-initialized!", .{});
     }
 
-    if (api.keyboard.?.deinit) |deinit| try deinit();
+    if (api.keyboard) |kb| {
+        if (kb.deinit) |deinit| {
+            try deinit();
+            std.log.info("Keyboard de-initialized!", .{});
+        }
+    }
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {

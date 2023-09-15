@@ -121,6 +121,8 @@ end32:
     pop %esi
     pop %ebx
 
+    sti
+
     ret
 
 stack_pointer: .long 0

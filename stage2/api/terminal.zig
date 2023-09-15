@@ -30,6 +30,12 @@ pub const bg_color = enum(u8) {
 };
 // zig fmt: on
 
+pub const SpecialChars = enum(u8) {
+    backspace = 0x8,
+    newline = '\n',
+    tab = '\t',
+};
+
 pub const Terminal = struct {
     init: ?*const fn () anyerror!void,
     writeChar: *const fn (u8) anyerror!void,
