@@ -40,6 +40,7 @@ fn newLine() void {
             for (0..160) |x| {
                 buffer[y][x] = buffer[y + 1][x];
             }
+            position_per_row[y] = position_per_row[y + 1];
         }
         context.row -= 1;
         @memset(&buffer[24], 0);
