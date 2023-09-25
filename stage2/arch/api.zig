@@ -1,5 +1,7 @@
 const builtin = @import("builtin");
-pub const API = @import("../api/api.zig").API;
+const API = @import("api").API;
+
+pub const writer = @import("writer.zig");
 
 pub const api: API = switch (builtin.os.tag) {
     .uefi => @import("uefi/api.zig").api(),

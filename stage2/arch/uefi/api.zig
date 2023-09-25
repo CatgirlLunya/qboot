@@ -1,19 +1,25 @@
-const API = @import("../api.zig").API;
+const API = @import("api").API;
 const terminal = @import("terminal.zig");
 const clock = @import("clock.zig");
 const memory_map = @import("mm/memory_map.zig");
 const keyboard = @import("keyboard.zig");
 const init = @import("init.zig").init;
+const disk = @import("disk.zig");
 
 pub fn api() API {
     return .{
         .clock = .{
             .getTime = clock.getTime,
         },
-        .terminal = .{
+        .terminals = &.{.{
             .init = terminal.init,
             .setColor = terminal.setColor,
-            .writeChar = terminal.writeChar,
+            .printChar = terminal.writeChar,
+        }},
+        .disk = .{
+            .init = null,
+            .loadFile = disk.loadFile,
+            .deinit = null,
         },
         .memory = .{
             .init = memory_map.init,

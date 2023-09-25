@@ -8,7 +8,7 @@ pub const fg_color = enum(u8) {
     magenta,
     brown,
     gray,
-    drak_gray,
+    dark_gray,
     light_blue,
     light_green,
     light_cyan,
@@ -38,6 +38,6 @@ pub const SpecialChars = enum(u8) {
 
 pub const Terminal = struct {
     init: ?*const fn () anyerror!void,
-    writeChar: *const fn (u8) anyerror!void,
+    printChar: *const fn (u8) anyerror!void,
     setColor: ?*const fn (fg_color, bg_color) anyerror!void,
 };

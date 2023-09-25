@@ -5,14 +5,9 @@ extern const bss_end: usize;
 
 const std = @import("std");
 const bmain = @import("../../bmain.zig");
-const writer = @import("../../writer.zig");
+const writer = @import("arch").writer;
 
 export fn _start() linksection(".entry") noreturn {
-    const ptr: [*]u8 = @ptrFromInt(bss_begin);
-    for (0..bss_end - bss_begin) |c| {
-        ptr[c] = 0;
-    }
-
     bmain.bmain() catch |err| {
         std.log.err("Error from main: {}", .{err});
     };

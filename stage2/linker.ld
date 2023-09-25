@@ -15,7 +15,7 @@ PHDRS {
 SECTIONS {
     . = 0x7E00; /* stage1 loads stage2 here */
 
-    /* Puts the ".entry" section marked in entry.asm first */ 
+    /* Puts the ".entry" section marked in entry.zig first */ 
     .text : {
         *(.entry)
         *(.realmode)
@@ -28,10 +28,8 @@ SECTIONS {
     } :data
 
     .bss : {
-        bss_begin = .; /* Given to entry.asm so it can zero out bss */
         *(COMMON)
         *(.bss .bss.*)
-        bss_end = .; /* Same as above */
     } :data
 
     /DISCARD/ : {
@@ -39,3 +37,5 @@ SECTIONS {
         *(.note .note.*)
     }
 }
+
+/* TODO: Put in BIOS folder or make linker scripts folder */

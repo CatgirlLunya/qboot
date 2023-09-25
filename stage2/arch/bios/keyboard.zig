@@ -1,7 +1,7 @@
 const isr = @import("asm/isr.zig");
 const ps2 = @import("ps2/8042.zig");
 const pic = @import("asm/pic.zig");
-const keyboard = @import("../../api/keyboard.zig");
+const keyboard = @import("api").keyboard;
 const std = @import("std");
 
 // Both of the following use keycode set 2
@@ -242,14 +242,13 @@ fn keyboardIRQ(info: isr.InterruptInfo) callconv(.C) void {
         // Wrapping addition
         top +%= 1;
     }
-
     pic.eoi(@intCast(info.interrupt_number - pic.PIC1_OFFSET));
 }
 
 pub fn getInput() ?keyboard.KeyEvent {
     // Wait until buffer at head has data, then return it and advance head
     if (top == head) return null;
-    asm volatile ("nop"); // For some reason bochs doesn't work at all without this but works perfectly with it so don't remove
+    // asm volatile ("nop");
     head +%= 1;
     return buffer[head - 1];
 }

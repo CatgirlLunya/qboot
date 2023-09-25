@@ -1,6 +1,6 @@
 const real_mode = @import("asm/real_mode.zig");
 const frame = @import("asm/frame.zig");
-const Time = @import("../../api/api.zig").clock.Time;
+const Time = @import("api").clock.Time;
 
 pub fn getTime() !Time {
     var input_frame: frame.Frame = .{};

@@ -1,4 +1,4 @@
-const memory = @import("../../../api/api.zig").memory;
+const memory = @import("api").memory;
 const real_mode = @import("../asm/real_mode.zig");
 const frame = @import("../asm/frame.zig");
 
@@ -32,7 +32,8 @@ pub fn getMemoryMapFromBIOS() !void {
     var entry: u32 = 0;
     var registers: frame.Frame = .{
         .ebx = 0,
-        .edi = @intFromPtr(&buffer),
+        .es = @intFromPtr(&buffer) / 16,
+        .edi = @intFromPtr(&buffer) % 16,
     };
     while (entry < memory.MaxMemoryMapEntries) : (entry += 1) {
         registers.eax = 0xE820;

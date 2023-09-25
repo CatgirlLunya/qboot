@@ -1,7 +1,7 @@
 const memory_map = @import("memory_map.zig");
 const std = @import("std");
 
-pub var fba: std.heap.FixedBufferAllocator = undefined;
+var fba: std.heap.FixedBufferAllocator = undefined;
 pub const allocator: std.mem.Allocator = fba.allocator();
 
 var entry_no: ?usize = null;

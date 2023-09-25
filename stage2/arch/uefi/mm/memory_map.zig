@@ -1,4 +1,4 @@
-const memory = @import("../../../api/api.zig").memory;
+const memory = @import("api").memory;
 const uefi = @import("std").os.uefi;
 
 pub var memoryMap: memory.MemoryMap = undefined;

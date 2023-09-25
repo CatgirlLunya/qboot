@@ -1,6 +1,6 @@
 const uefi = @import("std").os.uefi;
 const protocol = @import("wrapper/protocol.zig");
-const api_terminal = @import("../../api/api.zig").terminal;
+const api_terminal = @import("api").terminal;
 
 var con_out: ?*uefi.protocols.SimpleTextOutputProtocol = null;
 

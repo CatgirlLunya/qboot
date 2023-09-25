@@ -5,28 +5,33 @@
 
 biosInterrupt:
     cli
+    xchg %bx, %bx
 
     # modify the interrupt number
     # WARNING: SELF MODIFYING CODE USAGE
     movb 4(%esp), %al
-    movb %al, interrupt_number
+    movb %al, (interrupt_number)
 
     # Save register input and output
     movl 8(%esp), %eax
-    movl %eax, in_registers
+    movl %eax, (in_registers)
 
     movl 12(%esp), %eax
-    movl %eax, out_registers
-
-    # Don't need to disable paging b/c this megabyte will be identity paged anyways
-
-    sgdt saved_gdt # limine does this in case BIOS overwrites it, so I'm doing it too
-    sidt saved_idt
+    movl %eax, (out_registers)
 
     push %ebx
     push %esi
     push %edi
     push %ebp
+
+    # Don't need to disable paging b/c this megabyte will be identity paged anyways
+
+    sgdt (saved_gdt) # limine does this in case BIOS overwrites it, so I'm doing it too
+    sidt (saved_idt)
+
+    movl %esp, %ss:stack_pointer
+
+    lidt real_idt
 
     # Uses 16 bit code segment of GDT
     jmp $0x18,$main16
@@ -38,9 +43,6 @@ main16:
     mov %ax, %fs
     mov %ax, %gs 
     mov %ax, %ss
-
-    # OSDev wiki says do this before disabling protected mode but while in 16 bit
-    lidt real_idt
 
     # Disable protected mode
     mov %cr0, %eax
@@ -89,12 +91,12 @@ mainReal:
     mov %esi, 20(%esp)
     mov %ebp, 24(%esp)
     movl %ss:stack_pointer, %eax
-    movl %eax, 28(%esp)
+    mov %eax, 28(%esp)
     mov %ds, 40(%esp)
     mov %es, 44(%esp)
     mov %fs, 48(%esp)
     mov %gs, 52(%esp)
-    add $0x4, %esp
+    add $0x52, %esp
     pushfd
 
     movl %ss:stack_pointer, %esp
@@ -122,7 +124,6 @@ end32:
     pop %ebx
 
     sti
-
     ret
 
 stack_pointer: .long 0

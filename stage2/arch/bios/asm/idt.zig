@@ -120,5 +120,6 @@ pub fn init() void {
     asm volatile ("lidt (%[idtr])"
         :
         : [idtr] "r" (idtr),
+        : "memory"
     );
 }

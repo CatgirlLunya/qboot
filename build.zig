@@ -70,7 +70,27 @@ fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
         .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },
     });
     // zig fmt: on
-    // exe.addModule("api", b.createModule(.{ .source_file = .{ .path = comptime here() ++ "/stage2/api/api.zig" } }));
+
+    const common_mod = b.createModule(.{
+        .source_file = .{ .path = "stage2/common/common.zig" },
+    });
+    const api_mod = b.createModule(.{
+        .source_file = .{ .path = "stage2/api/api.zig" },
+        .dependencies = &.{
+            .{ .name = "common", .module = common_mod },
+        },
+    });
+    const arch_mod = b.createModule(.{
+        .source_file = .{ .path = "stage2/arch/api.zig" },
+        .dependencies = &.{
+            .{ .name = "api", .module = api_mod },
+            .{ .name = "common", .module = common_mod },
+        },
+    });
+
+    exe.addModule("api", api_mod);
+    exe.addModule("common", common_mod);
+    exe.addModule("arch", arch_mod);
 
     var install = b.addInstallArtifact(exe, .{});
     install.dest_dir = .{ .custom = "uefi/EFI/BOOT/" };
@@ -147,7 +167,7 @@ fn CreateBIOSStage1Target(b: *std.Build, location: []const u8) !*std.Build.Step 
 fn CreateBIOSStage2Target(b: *std.Build) !*std.Build.Step {
     var target = std.zig.CrossTarget{
         .cpu_arch = .x86,
-        .abi = .none,
+        .abi = .gnu,
         .os_tag = .freestanding,
     };
 
@@ -171,7 +191,28 @@ fn CreateBIOSStage2Target(b: *std.Build) !*std.Build.Step {
     // zig fmt: on
     exe.setLinkerScript(.{ .path = "stage2/linker.ld" });
     exe.addAssemblyFile(.{ .path = "stage2/arch/bios/asm/real_mode.S" });
-    exe.code_model = .kernel;
+
+    const common_mod = b.createModule(.{
+        .source_file = .{ .path = "stage2/common/common.zig" },
+    });
+    const api_mod = b.createModule(.{
+        .source_file = .{ .path = "stage2/api/api.zig" },
+        .dependencies = &.{
+            .{ .name = "common", .module = common_mod },
+        },
+    });
+    const arch_mod = b.createModule(.{
+        .source_file = .{ .path = "stage2/arch/api.zig" },
+        .dependencies = &.{
+            .{ .name = "api", .module = api_mod },
+            .{ .name = "common", .module = common_mod },
+        },
+    });
+
+    exe.addModule("api", api_mod);
+    exe.addModule("common", common_mod);
+    exe.addModule("arch", arch_mod);
+    exe.code_model = .small;
 
     var install = b.addInstallArtifact(exe, .{});
     install.dest_dir = .{ .custom = "bios" };
@@ -195,6 +236,7 @@ fn CreateBIOSStage2Target(b: *std.Build) !*std.Build.Step {
         "zsh",
         comptime here() ++ "/scripts/make_bios_disk.sh",
         comptime here() ++ "/zig-out/bios",
+        comptime here() ++ "/test_fs",
     });
 
     const fdisk_dependency_step = try createDependencyStep(b, "fdisk");
@@ -222,6 +264,8 @@ fn SetupRunBIOS(b: *std.Build, bios_step: *std.Build.Step) !void {
         "-m", "256M",
         "-vga", "std",
         "-rtc", "base=localtime",
+        // "-serial", "stdio",
+        "-no-reboot",
         "-drive", b.fmt("format=raw,file={s}", .{comptime here() ++ "/zig-out/bios/disk.dd"}),
     };
 

@@ -7,6 +7,7 @@ boot:
     mov es, ax
     mov ss, ax
     mov sp, 0x7C00
+    mov [disk_number], dl
     
     mov cx, 0 ; will use this for error handling, don't touch
 
@@ -35,7 +36,7 @@ boot:
             .segment: dw 0x7E0 ; segment to store stage2 at
             .loc: dq 2048 ; 2048 is the LBA
         
-        mov al, 4 ; will loop twice, setting this up b/c i'll likely do this later anyways
+        mov al, 4 ; will loop this many times, setting this up b/c i'll likely do this later anyways
         mov si, disk_packet
         mov ah, 42h ; int 13h, 42h is read
 
@@ -155,8 +156,16 @@ pmode:
     mov fs, ax
     mov gs, ax
 
-    mov esp, 0x7FFFF ; As much free space for stack as possible, equal to (0x7FFFF - 0x7E00) - stage2 size
+    mov esp, 0x80000 ; As much free space for stack as possible, equal to (0x7FFFF - 0x7E00) - stage2 size
+    xor eax, eax
+    xor ebx, ebx
+    xor ecx, ecx
+    xor edx, edx
+    xor esi, esi
+    xor edi, edi
+    xor ebp, ebp
 
+    xchg bx, bx
     jmp 0x7E00
 
 hang:
@@ -166,6 +175,6 @@ hang:
 msgBootInit: db "Bootloader started!", 0x0D, 0x0A, 0x0
 msgLoadedStage2: db "Loaded stage2", 0x0D, 0x0A, 0x0
 msgRealModePrep: db "Jumping to real mode...", 0x0D, 0x0A, 0x0
-drvieNumber: db 0
 
-times 446-($-$$) db 0
+times 445-($-$$) db 0
+disk_number: db 0

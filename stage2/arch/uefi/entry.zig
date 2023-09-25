@@ -1,8 +1,7 @@
 pub const std = @import("std");
 
-pub const terminal = @import("terminal.zig");
 pub const bmain = @import("../../bmain.zig");
-const writer = @import("../../writer.zig");
+const writer = @import("arch").writer;
 
 pub fn main() noreturn {
     bmain.bmain() catch |err| {

@@ -1,4 +1,4 @@
-const keyboard = @import("../../api/keyboard.zig");
+const keyboard = @import("api").keyboard;
 const uefi = @import("std").os.uefi;
 const protocol = @import("wrapper/protocol.zig");
 

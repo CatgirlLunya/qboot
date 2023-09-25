@@ -1,5 +1,5 @@
-const cpu = @import("asm/cpu.zig");
-const api_terminal = @import("../../api/api.zig").terminal;
+const cpu = @import("../asm/cpu.zig");
+const api_terminal = @import("api").terminal;
 const std = @import("std");
 
 const buffer: *volatile [25][160]u8 = @ptrFromInt(0xB8000);
@@ -68,13 +68,13 @@ fn backspace() void {
     setCursorPosition(context.column, context.row);
 }
 
-pub fn putChar(c: u8) !void {
+pub fn printChar(c: u8) !void {
     if (c == @intFromEnum(api_terminal.SpecialChars.newline)) {
         newLine();
     } else if (c == @intFromEnum(api_terminal.SpecialChars.backspace)) {
         backspace();
     } else if (c == @intFromEnum(api_terminal.SpecialChars.tab)) {
-        for (0..4) |_| try putChar(' ');
+        for (0..4) |_| try printChar(' ');
     } else {
         if (context.column == 80) newLine();
         putCharAt(context.column, context.row, c);
@@ -82,7 +82,7 @@ pub fn putChar(c: u8) !void {
     }
 }
 
-pub fn setCursor(enabled: bool) void {
+fn setCursor(enabled: bool) void {
     if (enabled) {
         // Tells the CRT Controller Address Register(0x3D4) that we will write to the Cursor Start Register(0xA)
         cpu.outb(0x3D4, 0x0A);
@@ -101,7 +101,7 @@ pub fn setCursor(enabled: bool) void {
     }
 }
 
-pub fn setCursorPosition(x: usize, y: usize) void {
+fn setCursorPosition(x: usize, y: usize) void {
     const position: u16 = @intCast((y * 80) + x);
     cpu.outb(0x3D4, 0x0F); // Cursor location low register
     cpu.outb(0x3D5, @intCast(position & 0xFF));
