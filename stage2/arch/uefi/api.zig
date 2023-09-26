@@ -17,7 +17,7 @@ pub fn api() API {
             .printChar = terminal.writeChar,
         }},
         .disk = .{
-            .init = null,
+            .init = disk.init,
             .loadFile = disk.loadFile,
             .deinit = null,
         },
