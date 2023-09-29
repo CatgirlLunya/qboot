@@ -5,7 +5,6 @@
 
 biosInterrupt:
     cli
-    xchg %bx, %bx
 
     # modify the interrupt number
     # WARNING: SELF MODIFYING CODE USAGE

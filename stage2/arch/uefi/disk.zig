@@ -10,43 +10,57 @@ pub fn init() !void {
 }
 
 pub fn loadFile(path: []const u8) !file.File {
-    var f: file.File = undefined;
-    f.path = @constCast(path);
     var new_protocol: *uefi.protocols.FileProtocol = undefined;
-    var buf = try uefi.pool_allocator.alloc(u16, path.len + 1);
-    buf[path.len] = 0;
+    var buffer = try uefi.pool_allocator.alloc(u16, path.len + 1);
+    buffer[path.len] = 0;
     for (path, 0..) |c, i| {
-        buf[i] = c;
-        if (c == '/') buf[i] = '\\';
+        buffer[i] = c;
+        if (c == '/') buffer[i] = '\\';
     }
 
     try root_dir.open(
-        &new_protocol,
-        @ptrCast(buf.ptr),
+        @constCast(&new_protocol),
+        @ptrCast(buffer.ptr),
         uefi.protocols.FileProtocol.efi_file_mode_read,
         0,
     ).err();
+    uefi.pool_allocator.free(buffer);
 
-    var buffer_size: usize = 0;
-    var buffer = try uefi.pool_allocator.alloc(u8, @sizeOf(uefi.protocols.FileInfo));
-
-    new_protocol.getInfo(&uefi.protocols.FileInfo.guid, &buffer_size, buffer.ptr).err() catch {};
-    buffer = try uefi.pool_allocator.realloc(buffer, buffer_size);
-    try new_protocol.getInfo(&uefi.protocols.FileInfo.guid, &buffer_size, buffer.ptr).err();
-
-    var info_struct = @as(*uefi.protocols.FileInfo, @alignCast(@ptrCast(buffer.ptr)));
-
-    buffer_size = info_struct.file_size;
-    f.contents = try uefi.pool_allocator.alloc(u8, info_struct.file_size);
-    try new_protocol.read(&buffer_size, f.contents.ptr).err();
-
-    try new_protocol.close().err();
-
-    f.free = struct {
-        pub fn free(self: *file.File) !void {
-            uefi.pool_allocator.free(self.contents);
-        }
-    }.free;
+    var f: file.File = .{
+        .pos = 0,
+        .read_fn = struct {
+            pub fn read(ctx: *file.File, dest: []u8) !usize {
+                if (try ctx.getSize() <= ctx.pos) return 0;
+                var file_protocol: *uefi.protocols.FileProtocol = @alignCast(@ptrCast(ctx.extra));
+                var len = try file_protocol.reader().read(dest);
+                ctx.pos += len;
+                return len;
+            }
+        }.read,
+        .get_size_fn = struct {
+            pub fn getSize(ctx: *file.File) !usize {
+                var file_protocol: *uefi.protocols.FileProtocol = @alignCast(@ptrCast(ctx.extra));
+                // preserve the old file position
+                var pos: u64 = undefined;
+                var end_pos: u64 = undefined;
+                try file_protocol.getPosition(&pos).err();
+                // seek to end of file to get position = file size
+                try file_protocol.setPosition(uefi.protocols.FileProtocol.efi_file_position_end_of_file).err();
+                try file_protocol.getPosition(&end_pos).err();
+                // restore the old position
+                try file_protocol.setPosition(pos).err();
+                // return the file size = position
+                return end_pos;
+            }
+        }.getSize,
+        .free_fn = struct {
+            pub fn free(ctx: *file.File) !void {
+                var file_protocol: *uefi.protocols.FileProtocol = @alignCast(@ptrCast(ctx.extra));
+                try file_protocol.close().err();
+            }
+        }.free,
+        .extra = new_protocol,
+    };
 
     return f;
 }

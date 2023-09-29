@@ -5,7 +5,7 @@ https://github.com/limine-bootloader/limine/blob/v5.x-branch/decompressor/linker
 
 OUTPUT_FORMAT(elf32-i386)
 OUTPUT_ARCH(i386)
-ENTRY(_start)
+ENTRY(main)
 
 PHDRS {
     text PT_LOAD FLAGS((1 << 0) | (1 << 2));

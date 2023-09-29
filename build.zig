@@ -64,7 +64,7 @@ fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
     // zig fmt: off
     const exe = b.addExecutable(.{
         .name = "BOOTX64",
-        .root_source_file = .{ .path = comptime here() ++ "/stage2/arch/uefi/entry.zig" },
+        .root_source_file = .{ .path = comptime here() ++ "/stage2/main.zig" },
         .target = target,
         .optimize = .ReleaseSmall,
         .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },
@@ -183,7 +183,7 @@ fn CreateBIOSStage2Target(b: *std.Build) !*std.Build.Step {
     // zig fmt: off
     const exe = b.addExecutable(.{
         .name = "stage2.bin",
-        .root_source_file = .{ .path = comptime here() ++ "/stage2/arch/bios/entry.zig" },
+        .root_source_file = .{ .path = comptime here() ++ "/stage2/main.zig" },
         .target = target,
         .optimize = .ReleaseSmall,
         .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },

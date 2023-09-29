@@ -32,7 +32,7 @@ const errors = error{
     NoValidEntries,
 };
 
-pub fn readBytes(position: u64, bytes: usize, buffer: []u8) !void {
+pub fn readBytes(position: u64, bytes: usize, buffer: []u8) file.File.ReadError!void {
     const sector_size: u16 = 0x200;
     // Round bottom to lowest sector
     var bottom: u64 = @divFloor(position, sector_size) * sector_size;
@@ -70,7 +70,7 @@ pub fn readBytes(position: u64, bytes: usize, buffer: []u8) !void {
 
         if (regs.eflags & 0x1 == 1 or regs.eax & 0x00FF != 0) {
             std.log.err("EAX ERROR: {}, {}", .{ regs.eax, disk_number });
-            return error.DiskReadFail;
+            return file.File.ReadError.ReadError;
         }
 
         sectors -= chunk;
@@ -117,7 +117,7 @@ pub fn init() !void {
 /// Partition should be formatted using ext2
 pub fn loadFile(path: []const u8) !file.File {
     std.log.debug("Loading file {s}...", .{path[0]});
-    return fs.loadFileFromPath(@constCast(path), null);
+    return fs.loadFileFromPath(@constCast(path));
 }
 
 pub fn deinit() !void {

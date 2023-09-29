@@ -104,13 +104,11 @@ pub const ExtendedSuperblock = extern struct {
     }
 };
 
-const errors = error{
+pub const Error = error{
     CorruptedSignature,
     MismatchedBlockGroups,
     BufferTooSmall,
-    FileNotFound,
-    InvalidPath,
-};
+} || std.mem.Allocator.Error;
 
 pub const Superblock = struct {
     common: CommonSuperblock,
@@ -343,14 +341,13 @@ pub const EXT2 = struct {
     superblock: Superblock,
     descriptors: []BlockGroupDescriptor,
     root_directory: Inode,
-    initialized: bool = false,
 
     var alloc: std.mem.Allocator = undefined;
-    var read: *const fn (addr: u64, size: usize, buf: []u8) anyerror!void = undefined;
+    var read: *const fn (addr: u64, size: usize, buf: []u8) file.File.ReadError!void = undefined;
     var offset: u64 = 0;
 
     /// Reads the superblock, block group descriptors, and root directory inode
-    pub fn init(allocator: std.mem.Allocator, disk_reader: *const fn (addr: u64, size: usize, buf: []u8) anyerror!void, disk_offset: ?u64) !EXT2 {
+    pub fn init(allocator: std.mem.Allocator, disk_reader: *const fn (addr: u64, size: usize, buf: []u8) file.File.ReadError!void, disk_offset: ?u64) !EXT2 {
         offset = disk_offset orelse 0;
         alloc = allocator;
         read = disk_reader;
@@ -372,12 +369,10 @@ pub const EXT2 = struct {
 
         ext2.root_directory = try ext2.readInode(2);
 
-        ext2.initialized = true;
-
         return ext2;
     }
 
-    fn readBlock(self: *EXT2, block: u64) ![]u8 {
+    fn readBlock(self: *EXT2, block: u64) file.File.ReadError![]u8 {
         var buf = try alloc.alloc(u8, @intCast(self.superblock.blockSize()));
         try read(offset + self.superblock.blockSize() * block, @intCast(self.superblock.blockSize()), buf);
         return buf;
@@ -393,47 +388,47 @@ pub const EXT2 = struct {
         return inode_struct;
     }
 
-    pub fn getInodeContents(self: *EXT2, inode: Inode, buf: ?[]u8) ![]u8 {
-        if (inode.doubly_indirect_block_pointer != 0 or inode.triply_indirect_block_pointer != 0) return error.BufferTooSmall;
-        var buffer = if (buf) |b| b else try alloc.alloc(u8, @intCast(inode.size_lower_32_bits));
+    pub fn getInodeContents(self: *EXT2, inode: Inode, pos: usize, buf: ?[]u8, to_read: ?u64) file.File.ReadError![]u8 {
+        // If file would end before buffer, just read the rest of the file, else read as much as possible into the buffer
+        var buffer = if (buf) |b| b else try alloc.alloc(u8, inode.size_lower_32_bits);
+        var len_to_read = if (to_read) |t| t else buffer.len;
 
-        var blocks: std.ArrayList(u32) = std.ArrayList(u32).init(alloc);
-        for (inode.direct_block_pointers) |ptr| {
-            if (ptr != 0) try blocks.append(ptr);
+        const starting_block = pos / self.superblock.blockSize();
+        const offset_in_block = pos % self.superblock.blockSize();
+        _ = offset_in_block; // TODO: Fix
+        for (0..@intCast((len_to_read + self.superblock.blockSize() - 1) / self.superblock.blockSize()), 0..) |block, i| {
+            var block_ptr = blk: {
+                if (0 <= block + starting_block and block + starting_block < 12) break :blk inode.direct_block_pointers[@intCast(block + starting_block)];
+                if (13 <= block + starting_block and block + starting_block < self.superblock.blockSize() / 4 + 13) {
+                    const block_data = try self.readBlock(block + starting_block);
+                    const block_num = std.mem.readIntLittle(u32, @as(*[4]u8, @ptrCast(block_data.ptr)));
+                    alloc.free(block_data);
+                    break :blk block_num;
+                }
+                return error.BufferTooSmall;
+            };
+            const need_to_read = @min(len_to_read - i * self.superblock.blockSize(), self.superblock.blockSize());
+            try read(block_ptr * self.superblock.blockSize() + offset, @intCast(need_to_read), buffer[@intCast(i * self.superblock.blockSize())..]);
         }
-        if (inode.singly_indirect_block_pointer != 0) {
-            var block = try self.readBlock(inode.singly_indirect_block_pointer);
-            for (0..@intCast(self.superblock.blockSize() / 4)) |i| {
-                var ptr = std.mem.readIntLittle(u32, @as(*[4]u8, @ptrCast(block[i * 4 .. (i + 1) * 4])));
-                if (ptr == 0) break;
-                try blocks.append(ptr);
-            }
-        }
-
-        for (blocks.items, 0..) |item, i| {
-            var pos = offset + item * self.superblock.blockSize();
-            try read(pos, @intCast(@min(self.superblock.blockSize(), buffer.len - self.superblock.blockSize() * i)), buffer[@intCast(i * self.superblock.blockSize())..]);
-        }
-
-        blocks.deinit();
 
         return buffer;
     }
 
     fn loadDirectory(self: *EXT2, inode: Inode) !Directory {
         // Reads the direct and singly indirect BPs for now, maybe expand later?
-        var contents = try self.getInodeContents(inode, null);
+        var contents = try self.getInodeContents(inode, 0, null, null);
         var dir = try Directory.readFromBinary(contents, &self.superblock);
         alloc.free(contents);
         return dir;
     }
 
-    fn loadFile(self: *EXT2, inode: Inode, buf: ?[]u8) ![]u8 {
-        return self.getInodeContents(inode, buf);
+    fn readFromFile(self: *EXT2, inode: Inode, buf: []u8, pos: usize) file.File.ReadError!usize {
+        _ = try self.getInodeContents(inode, pos, buf, buf.len);
+        if (pos > inode.size_lower_32_bits) return 0;
+        return if (buf.len < inode.size_lower_32_bits) buf.len else inode.size_lower_32_bits;
     }
 
-    pub fn loadFileFromPath(self: *EXT2, path: []u8, buf: ?[]u8) !file.File {
-        var f: file.File = undefined;
+    pub fn loadFileFromPath(self: *EXT2, path: []u8) !file.File {
         if (path[0] != '/') return error.InvalidPath;
         var cwd = try self.loadDirectory(self.root_directory);
         var split = std.mem.splitScalar(u8, path[1..], '/');
@@ -450,17 +445,50 @@ pub const EXT2 = struct {
                 break entry_inode;
             }
         };
-        f.contents = try self.loadFile(file_inode, buf);
-        f.path = path;
-        f.free = struct {
-            pub fn free(c: *file.File) !void {
-                alloc.free(c.contents);
-            }
-        }.free;
+        var inode_copy = try alloc.create(Inode);
+        var extra_context = try alloc.create(ExtraFileContext);
+        extra_context.* = ExtraFileContext{
+            .inode = inode_copy,
+            .fs = self,
+        };
+        inode_copy.* = file_inode;
+        var f: file.File = .{
+            .pos = 0,
+            .read_fn = struct {
+                pub fn read(ctx: *file.File, dest: []u8) file.File.ReadError!usize {
+                    var extra: *ExtraFileContext = @alignCast(@ptrCast(ctx.extra));
+                    const val = try extra.fs.readFromFile(extra.inode.*, dest, ctx.pos);
+                    ctx.pos += dest.len;
+                    return val;
+                }
+            }.read,
+
+            .free_fn = struct {
+                pub fn free(ctx: *file.File) !void {
+                    var extra: *ExtraFileContext = @alignCast(@ptrCast(ctx.extra));
+                    alloc.destroy(extra.inode);
+                    alloc.destroy(extra);
+                }
+            }.free,
+
+            .get_size_fn = struct {
+                pub fn getSize(ctx: *file.File) !usize {
+                    var extra: *ExtraFileContext = @alignCast(@ptrCast(ctx.extra));
+                    return extra.inode.size_lower_32_bits;
+                }
+            }.getSize,
+
+            .extra = extra_context,
+        };
         return f;
     }
 
     pub fn free(self: *EXT2) void {
         alloc.free(self.descriptors);
     }
+};
+
+pub const ExtraFileContext = struct {
+    inode: *Inode,
+    fs: *EXT2,
 };

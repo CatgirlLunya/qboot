@@ -1,7 +1,15 @@
 const std = @import("std");
 const api = @import("arch").api;
+const writer = @import("arch").writer;
 
-pub fn bmain() !void {
+pub export fn main() linksection(".entry") noreturn {
+    kmain() catch |err| {
+        std.log.err("Error from bmain: {!}", .{err});
+    };
+    @panic("Reached end of main!");
+}
+
+pub fn kmain() !void {
     if (api.terminals) |terminals| {
         for (terminals) |terminal| {
             if (terminal.init) |init| try init();
@@ -37,8 +45,10 @@ pub fn bmain() !void {
 
     const cfg_file_locations = &.{ "/config.cfg", "/boot/config.cfg" };
     var config_file = try api.disk.loadFile(cfg_file_locations[0]);
-    std.log.info("\nContents: \n{s}\n", .{config_file.contents});
-    try config_file.free(&config_file);
+    var contents = try config_file.reader().readAllAlloc(api.allocator.allocator, try config_file.getSize());
+    std.log.info("\nContents: \n{s}\n", .{contents});
+    try config_file.free();
+    api.allocator.allocator.free(contents);
 
     // Keyboard code for later:
     // std.log.info("Now you can type: ", .{});
@@ -89,3 +99,14 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_
     _ = ret_addr;
     while (true) asm volatile ("hlt");
 }
+
+pub const std_options = struct {
+    pub fn logFn(comptime _: std.log.Level, comptime _: @Type(.EnumLiteral), comptime format: []const u8, args: anytype) void {
+        writer.writer.print(format ++ "\n", args) catch unreachable;
+    }
+
+    pub const log_level = .info;
+
+    // TODO: Refactoring, 0.2 update?
+    // pub const os = struct {};
+};
