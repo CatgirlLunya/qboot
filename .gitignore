@@ -1,8 +1,9 @@
-build/
 .cache/
 .vscode/
-compile_commands.json
-bx_enh_dbg.ini
+*/zig-cache/
 zig-cache/
 zig-out/
+compile_commands.json
+bx_enh_dbg.ini
 uefi/OVMF.fd
+test/fs/kernel.elf

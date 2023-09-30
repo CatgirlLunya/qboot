@@ -1,6 +1,7 @@
 const std = @import("std");
 const api = @import("arch").api;
 const writer = @import("arch").writer;
+const config = @import("common").config;
 
 pub export fn main() linksection(".entry") noreturn {
     kmain() catch |err| {
@@ -46,8 +47,14 @@ pub fn kmain() !void {
     const cfg_file_locations = &.{ "/config.cfg", "/boot/config.cfg" };
     var config_file = try api.disk.loadFile(cfg_file_locations[0]);
     var contents = try config_file.reader().readAllAlloc(api.allocator.allocator, try config_file.getSize());
-    std.log.info("\nContents: \n{s}\n", .{contents});
     try config_file.free();
+    var cfg = try config.Config.readFromBin(api.allocator.allocator, contents);
+    std.log.info("Config: {any}", .{cfg});
+
+    var kernel_file = try api.disk.loadFile(cfg.kernel_path);
+    std.log.info("File: {any}", .{kernel_file});
+    try kernel_file.free();
+
     api.allocator.allocator.free(contents);
 
     // Keyboard code for later:

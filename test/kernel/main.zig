@@ -73,7 +73,7 @@ pub fn puts(data: []const u8) void {
         putChar(c);
 }
 
-export fn _start() callconv(.C) noreturn {
+export fn main() callconv(.C) noreturn {
     puts("Hello from kernel!");
     while (true) {
         asm volatile ("hlt");

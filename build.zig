@@ -1,4 +1,5 @@
 const std = @import("std");
+const test_build = @import("test/test_build.zig");
 
 fn here() []const u8 {
     return std.fs.path.dirname(@src().file) orelse ".";
@@ -12,6 +13,10 @@ pub fn build(b: *std.Build) !void {
     var uefi_target = CreateUEFITarget(b);
     try SetupRunUEFI(b, uefi_target);
     try SetupPackageUEFI(b, uefi_target);
+
+    var test_build_step = try test_build.test_build(b);
+    uefi_target.dependOn(test_build_step);
+    bios_target.dependOn(test_build_step);
 }
 
 const Errors = error{
@@ -95,10 +100,13 @@ fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
     var install = b.addInstallArtifact(exe, .{});
     install.dest_dir = .{ .custom = "uefi/EFI/BOOT/" };
 
+    var copy_step = b.addSystemCommand(&.{ "cp", "-a", comptime here() ++ "/test/fs/.", b.fmt("{s}/uefi", .{b.install_path}) });
+
     const build_step = b.step("uefi", "Build the UEFI app");
     build_step.dependOn(&install.step);
+    build_step.dependOn(&copy_step.step);
 
-    return &install.step;
+    return build_step;
 }
 
 fn SetupRunUEFI(b: *std.Build, uefi_step: *std.Build.Step) !void {
@@ -234,9 +242,9 @@ fn CreateBIOSStage2Target(b: *std.Build) !*std.Build.Step {
 
     const build_disk_step = b.addSystemCommand(&[_][]const u8{
         "zsh",
-        comptime here() ++ "/scripts/make_bios_disk.sh",
-        comptime here() ++ "/zig-out/bios",
-        comptime here() ++ "/test_fs",
+        comptime here() ++ "/scripts/make_bios_disk.sh", // Make disk script
+        comptime here() ++ "/zig-out/bios", // Dir containing binaries
+        comptime here() ++ "/test/fs", // Dir containing files to put into ext2 fs
     });
 
     const fdisk_dependency_step = try createDependencyStep(b, "fdisk");
