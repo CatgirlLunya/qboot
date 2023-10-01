@@ -15,7 +15,7 @@ PHDRS {
 SECTIONS {
     . = 0x7E00; /* stage1 loads stage2 here */
 
-    /* Puts the ".entry" section marked in entry.zig first */ 
+    /* Puts the ".entry" section marked in main.zig first */ 
     .text : {
         *(.entry)
         *(.realmode)

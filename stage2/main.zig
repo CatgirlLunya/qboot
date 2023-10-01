@@ -7,6 +7,7 @@ pub export fn main() linksection(".entry") noreturn {
     kmain() catch |err| {
         std.log.err("Error from bmain: {!}", .{err});
     };
+    // std.log.info("End of main!", .{});
     @panic("Reached end of main!");
 }
 
@@ -46,16 +47,22 @@ pub fn kmain() !void {
 
     const cfg_file_locations = &.{ "/config.cfg", "/boot/config.cfg" };
     var config_file = try api.disk.loadFile(cfg_file_locations[0]);
-    var contents = try config_file.reader().readAllAlloc(api.allocator.allocator, try config_file.getSize());
+    var contents = try config_file.reader().readAllAlloc(api.allocator.allocator, @intCast(try config_file.getSize()));
     try config_file.free();
     var cfg = try config.Config.readFromBin(api.allocator.allocator, contents);
+    api.allocator.allocator.free(contents);
     std.log.info("Config: {any}", .{cfg});
 
     var kernel_file = try api.disk.loadFile(cfg.kernel_path);
+    //
+    cfg.free(api.allocator.allocator);
     std.log.info("File: {any}", .{kernel_file});
-    try kernel_file.free();
+    //
+    var header = try std.elf.Header.read(kernel_file);
+    std.log.info("pos = {}", .{try kernel_file.seekableStream().getPos()});
+    std.log.info("Header: {any}", .{header.machine});
 
-    api.allocator.allocator.free(contents);
+    try kernel_file.free();
 
     // Keyboard code for later:
     // std.log.info("Now you can type: ", .{});

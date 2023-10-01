@@ -19,6 +19,7 @@ boot:
         cmp dl, 80h
         jne error.invalidDrive
 
+    xchg bx, bx
     .readStage2:
         .checkAvailable: ; need 13h extensions for this to work
             mov ah, 41h
@@ -27,23 +28,17 @@ boot:
             jc error.int13hExtensions
             cmp bx, 0xaa55
             jne error.int13hExtensions
-        ; Disk Packet - Needed for int 13h extensions
-        disk_packet:
-            .size: db 16
-            .reserved: db 0
-            .amt: dw 64 ; 64 sectors or 32 kb(max is 127 according to wikipedia, so making it clean)
-            .offset: dw 0
-            .segment: dw 0x7E0 ; segment to store stage2 at
-            .loc: dq 2048 ; 2048 is the LBA
         
-        mov al, 4 ; will loop this many times, setting this up b/c i'll likely do this later anyways
-        mov si, disk_packet
-        mov ah, 42h ; int 13h, 42h is read
+        mov al, 2 ; will read 32 kib this many times
 
-        .loop: 
+        .loop:
+            mov si, disk_packet ; Add the end of the file
+            mov ah, 42h ; int 13h, 42h is read
             int 13h
             jc error.int13hFail ; carry set on interrupt fail, no space to add checks for output code
-            add word [disk_packet.segment], 0x800
+            add word [disk_packet.segment], 0x800 ; 0x200 * 0x40 bytes have been read, so put result 0x8000 bytes after the last
+            add word [disk_packet.lba], 0x40 ; move ahead 64 LBAs for the 64 sectors
+
             sub al, 1
             test al, al
             jnz .loop
@@ -149,7 +144,7 @@ checka20:
 
 [bits 32]
 pmode:
-    mov ax, 0x10
+    mov eax, 0x10
     mov ds, ax
     mov ss, ax
     mov es, ax
@@ -175,6 +170,15 @@ hang:
 msgBootInit: db "Bootloader started!", 0x0D, 0x0A, 0x0
 msgLoadedStage2: db "Loaded stage2", 0x0D, 0x0A, 0x0
 msgRealModePrep: db "Jumping to real mode...", 0x0D, 0x0A, 0x0
+
+; Disk Packet - Needed for int 13h extensions
+disk_packet:
+    .size: db 16
+    .reserved: db 0
+    .amt: dw 64 ; 64 sectors or 32 kib(max is 127 according to wikipedia, so making it clean)
+    .offset: dw 0
+    .segment: dw 0x7E0 ; segment to store stage2 at
+    .lba: dq 2048 ; 2048 is the LBA
 
 times 445-($-$$) db 0
 disk_number: db 0

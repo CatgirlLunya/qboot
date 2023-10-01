@@ -424,7 +424,7 @@ pub const EXT2 = struct {
 
     fn readFromFile(self: *EXT2, inode: Inode, buf: []u8, pos: usize) file.File.ReadError!usize {
         _ = try self.getInodeContents(inode, pos, buf, buf.len);
-        if (pos > inode.size_lower_32_bits) return 0;
+        if (pos >= inode.size_lower_32_bits) return 0;
         return if (buf.len < inode.size_lower_32_bits) buf.len else inode.size_lower_32_bits;
     }
 
@@ -457,8 +457,11 @@ pub const EXT2 = struct {
             .read_fn = struct {
                 pub fn read(ctx: *file.File, dest: []u8) file.File.ReadError!usize {
                     var extra: *ExtraFileContext = @alignCast(@ptrCast(ctx.extra));
-                    const val = try extra.fs.readFromFile(extra.inode.*, dest, ctx.pos);
-                    ctx.pos += dest.len;
+                    // TODO: Int cast fix
+                    const val = try extra.fs.readFromFile(extra.inode.*, dest, @intCast(ctx.pos));
+                    std.log.info("Read {} bytes, pos = {}", .{ val, ctx.pos });
+                    ctx.pos += val;
+                    std.log.info("Read {} bytes, pos = {}", .{ val, ctx.pos });
                     return val;
                 }
             }.read,
