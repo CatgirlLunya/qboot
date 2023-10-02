@@ -32,6 +32,7 @@ pub fn loadFile(path: []const u8) !file.File {
             pub fn read(ctx: *file.File, dest: []u8) !usize {
                 if (try ctx.getSize() <= ctx.pos) return 0;
                 var file_protocol: *uefi.protocols.FileProtocol = @alignCast(@ptrCast(ctx.extra));
+                try file_protocol.seekableStream().seekTo(ctx.pos);
                 var len = try file_protocol.reader().read(dest);
                 ctx.pos += len;
                 return len;

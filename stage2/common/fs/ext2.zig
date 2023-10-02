@@ -395,20 +395,34 @@ pub const EXT2 = struct {
 
         const starting_block = pos / self.superblock.blockSize();
         const offset_in_block = pos % self.superblock.blockSize();
-        _ = offset_in_block; // TODO: Fix
-        for (0..@intCast((len_to_read + self.superblock.blockSize() - 1) / self.superblock.blockSize()), 0..) |block, i| {
+        const blocks_to_read = ((len_to_read + offset_in_block) + self.superblock.blockSize() - 1) / self.superblock.blockSize();
+        var read_so_far: usize = 0;
+        for (0..@intCast(blocks_to_read)) |block| {
             var block_ptr = blk: {
-                if (0 <= block + starting_block and block + starting_block < 12) break :blk inode.direct_block_pointers[@intCast(block + starting_block)];
-                if (13 <= block + starting_block and block + starting_block < self.superblock.blockSize() / 4 + 13) {
-                    const block_data = try self.readBlock(block + starting_block);
+                const current_block = block + starting_block;
+                if (0 <= current_block and current_block < 12) break :blk inode.direct_block_pointers[@intCast(current_block)];
+                if (13 <= current_block and current_block < self.superblock.blockSize() / 4 + 13) {
+                    const block_data = try self.readBlock(current_block);
                     const block_num = std.mem.readIntLittle(u32, @as(*[4]u8, @ptrCast(block_data.ptr)));
                     alloc.free(block_data);
                     break :blk block_num;
                 }
                 return error.BufferTooSmall;
             };
-            const need_to_read = @min(len_to_read - i * self.superblock.blockSize(), self.superblock.blockSize());
-            try read(block_ptr * self.superblock.blockSize() + offset, @intCast(need_to_read), buffer[@intCast(i * self.superblock.blockSize())..]);
+
+            const start_pos = block_ptr * self.superblock.blockSize() + offset + offset_in_block; // Block start + ext2 start + start within block
+            var read_this_time: usize = blk: { // Either a full block size,
+                if (block == 0) {
+                    const end = (block_ptr + 1) * self.superblock.blockSize();
+                    break :blk @intCast(@min(end - start_pos, len_to_read));
+                } else if (block == blocks_to_read - 1) { // Final block
+                    break :blk @intCast(start_pos + len_to_read % self.superblock.blockSize());
+                } else break :blk @intCast(self.superblock.blockSize());
+            };
+            var dest = block * self.superblock.blockSize(); // Read to the start of the block size within the buffer
+            if (block != 0) dest -= offset_in_block; // The first read will only read this many bytes of the first block, every other will read block size
+            try read(start_pos, read_this_time, buffer[@intCast(read_so_far)..]);
+            read_so_far += read_this_time;
         }
 
         return buffer;
@@ -459,9 +473,7 @@ pub const EXT2 = struct {
                     var extra: *ExtraFileContext = @alignCast(@ptrCast(ctx.extra));
                     // TODO: Int cast fix
                     const val = try extra.fs.readFromFile(extra.inode.*, dest, @intCast(ctx.pos));
-                    std.log.info("Read {} bytes, pos = {}", .{ val, ctx.pos });
                     ctx.pos += val;
-                    std.log.info("Read {} bytes, pos = {}", .{ val, ctx.pos });
                     return val;
                 }
             }.read,

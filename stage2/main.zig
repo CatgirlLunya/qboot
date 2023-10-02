@@ -51,16 +51,16 @@ pub fn kmain() !void {
     try config_file.free();
     var cfg = try config.Config.readFromBin(api.allocator.allocator, contents);
     api.allocator.allocator.free(contents);
-    std.log.info("Config: {any}", .{cfg});
 
     var kernel_file = try api.disk.loadFile(cfg.kernel_path);
-    //
+
     cfg.free(api.allocator.allocator);
-    std.log.info("File: {any}", .{kernel_file});
-    //
+
     var header = try std.elf.Header.read(kernel_file);
-    std.log.info("pos = {}", .{try kernel_file.seekableStream().getPos()});
-    std.log.info("Header: {any}", .{header.machine});
+    var iterator = header.section_header_iterator(kernel_file);
+    while (try iterator.next()) |i| {
+        std.log.info("Program Header: {any}", .{i});
+    }
 
     try kernel_file.free();
 
