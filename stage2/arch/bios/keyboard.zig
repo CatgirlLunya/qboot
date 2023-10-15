@@ -134,7 +134,8 @@ pub fn init() !void {
     } else if (try ps2.identify(1) == .mf2_keyboard) {
         pic.installIRQ(0x9, keyboardIRQ);
     }
-    asm volatile ("sti");
+    // TODO: FIX?
+    // asm volatile ("sti");
 }
 
 pub fn deinit() !void {
@@ -248,7 +249,6 @@ fn keyboardIRQ(info: isr.InterruptInfo) callconv(.C) void {
 pub fn getInput() ?keyboard.KeyEvent {
     // Wait until buffer at head has data, then return it and advance head
     if (top == head) return null;
-    // asm volatile ("nop");
     head +%= 1;
     return buffer[head - 1];
 }

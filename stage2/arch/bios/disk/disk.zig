@@ -32,6 +32,9 @@ const errors = error{
     NoValidEntries,
 };
 
+// 32 sector buffer in the binary to ensure its in low memory, align(2) because this interrupt needs that for whatever reason
+var read_buf: [32 * 512]u8 align(2) = undefined;
+
 pub fn readBytes(position: u64, bytes: usize, buffer: []u8) file.File.ReadError!void {
     const sector_size: u16 = 0x200;
     // Round bottom to lowest sector
@@ -40,9 +43,7 @@ pub fn readBytes(position: u64, bytes: usize, buffer: []u8) file.File.ReadError!
     var top: u64 = @divFloor((position + bytes) + (sector_size - 1), sector_size) * sector_size;
     var sectors: u64 = (top - bottom) / sector_size;
 
-    // 32 sector buffer on the stack to ensure its in low memory, align(2) because this interrupt needs that for whatever reason
-    var tmp_buf: [32 * 512]u8 align(2) = undefined;
-    var buf_loc: usize = @intFromPtr(&tmp_buf);
+    var buf_loc: usize = @intFromPtr(&read_buf);
 
     var it: usize = 0;
     while (sectors != 0) : (it += 1) {
@@ -77,11 +78,13 @@ pub fn readBytes(position: u64, bytes: usize, buffer: []u8) file.File.ReadError!
         const offset_into_first_lba: usize = @intCast(position - bottom);
         if (it == 0) {
             // Put tmp_buf[offset..] into buffer[..end-offset]
-            var end_index: usize = @intCast(@as(u64, chunk * sector_size) - offset_into_first_lba);
-            @memcpy(buffer[0..end_index], tmp_buf[offset_into_first_lba .. chunk * sector_size]);
+            var end_index: usize = @min(buffer.len, @as(usize, @intCast(@as(usize, chunk * sector_size) - offset_into_first_lba)));
+            for (0..end_index) |i| {
+                buffer[i] = read_buf[offset_into_first_lba + i];
+            }
         } else {
             // Put tmp_buf[..end-offset] into buffer[it*32..]
-            @memcpy(buffer[it * 512 * 32 ..], tmp_buf[0 .. chunk * sector_size - offset_into_first_lba]);
+            @memcpy(buffer[it * 512 * 32 ..], read_buf[0 .. chunk * sector_size - offset_into_first_lba]);
         }
     }
 }

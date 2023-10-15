@@ -28,7 +28,7 @@ pub const ConsoleColors = enum(u8) {
 var row: usize = 0;
 var column: usize = 0;
 var color = vgaEntryColor(ConsoleColors.LightGray, ConsoleColors.Black);
-var buffer = @as([*]volatile u16, @ptrFromInt(0xB8000));
+var buffer: *volatile [25][160]u8 = @ptrFromInt(0xB8000);
 
 fn vgaEntryColor(fg: ConsoleColors, bg: ConsoleColors) u8 {
     return @intFromEnum(fg) | (@intFromEnum(bg) << 4);
@@ -41,6 +41,8 @@ fn vgaEntry(uc: u8, new_color: u8) u16 {
 }
 
 pub fn initialize() void {
+    row = 0;
+    column = 0;
     clear();
 }
 
@@ -49,16 +51,20 @@ pub fn setColor(new_color: u8) void {
 }
 
 pub fn clear() void {
-    mem.set(u16, buffer[0..VGA_SIZE], vgaEntry(' ', color));
+    for (0..24) |y| {
+        for (0..80) |x| {
+            putCharAt(0, @intCast(x), @intCast(y));
+        }
+    }
 }
 
-pub fn putCharAt(c: u8, new_color: u8, x: usize, y: usize) void {
-    const index = y * VGA_WIDTH + x;
-    buffer[index] = vgaEntry(c, new_color);
+pub fn putCharAt(c: u8, x: usize, y: usize) void {
+    buffer[y][x * 2] = c;
+    buffer[y][x * 2 + 1] = color;
 }
 
 pub fn putChar(c: u8) void {
-    putCharAt(c, color, column, row);
+    putCharAt(c, column, row);
     column += 1;
     if (column == VGA_WIDTH) {
         column = 0;
@@ -73,9 +79,9 @@ pub fn puts(data: []const u8) void {
         putChar(c);
 }
 
-export fn main() callconv(.C) noreturn {
+export fn main() void {
+    asm volatile ("mov $0x80000, %esp");
+    initialize();
     puts("Hello from kernel!");
-    while (true) {
-        asm volatile ("hlt");
-    }
+    while (true) asm volatile ("hlt");
 }

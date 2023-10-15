@@ -25,11 +25,10 @@ pub fn test_build(b: *std.Build) !*std.Build.Step {
         .name = "kernel.elf",
         .root_source_file = .{ .path = comptime here() ++ "/kernel/main.zig" },
         .target = target,
-        .optimize = .ReleaseSmall,
+        .optimize = .ReleaseSafe,
     });
     // zig fmt: on
     exe.setLinkerScript(.{ .path = comptime here() ++ "/kernel/linker.ld" });
-    exe.code_model = .kernel;
 
     var install = b.addInstallArtifact(exe, .{});
     install.dest_dir = .{ .custom = "kernel" };

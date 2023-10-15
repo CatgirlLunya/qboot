@@ -413,7 +413,7 @@ pub const EXT2 = struct {
             const start_pos = block_ptr * self.superblock.blockSize() + offset + offset_in_block; // Block start + ext2 start + start within block
             var read_this_time: usize = blk: { // Either a full block size,
                 if (block == 0) {
-                    const end = (block_ptr + 1) * self.superblock.blockSize();
+                    const end = (block_ptr + 1) * self.superblock.blockSize() + offset + offset_in_block;
                     break :blk @intCast(@min(end - start_pos, len_to_read));
                 } else if (block == blocks_to_read - 1) { // Final block
                     break :blk @intCast(start_pos + len_to_read % self.superblock.blockSize());
@@ -472,8 +472,10 @@ pub const EXT2 = struct {
                 pub fn read(ctx: *file.File, dest: []u8) file.File.ReadError!usize {
                     var extra: *ExtraFileContext = @alignCast(@ptrCast(ctx.extra));
                     // TODO: Int cast fix
+                    std.log.info("Reading from: {}", .{ctx.pos});
                     const val = try extra.fs.readFromFile(extra.inode.*, dest, @intCast(ctx.pos));
                     ctx.pos += val;
+                    std.log.info("New pos: {}", .{ctx.pos});
                     return val;
                 }
             }.read,

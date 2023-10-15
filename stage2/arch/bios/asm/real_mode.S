@@ -5,30 +5,32 @@
 
 biosInterrupt:
     cli
-
-    # modify the interrupt number
-    # WARNING: SELF MODIFYING CODE USAGE
-    movb 4(%esp), %al
-    movb %al, (interrupt_number)
-
-    # Save register input and output
-    movl 8(%esp), %eax
-    movl %eax, (in_registers)
-
-    movl 12(%esp), %eax
-    movl %eax, (out_registers)
-
+    
+    push %ebp
     push %ebx
     push %esi
     push %edi
-    push %ebp
+
+    # modify the interrupt number
+    # WARNING: SELF MODIFYING CODE USAGE
+    movb 20(%esp), %al
+    mov %al, interrupt_number(,1)
+
+    # Save register input and output
+    movl 24(%esp), %esi
+    mov $register_buf, %edi
+    mov $60, %ecx
+    rep movsb
+
+    movl 28(%esp), %eax
+    mov %eax, out_register_pointer(,1)
 
     # Don't need to disable paging b/c this megabyte will be identity paged anyways
 
     sgdt (saved_gdt) # limine does this in case BIOS overwrites it, so I'm doing it too
     sidt (saved_idt)
 
-    movl %esp, %ss:stack_pointer
+    mov %esp, %ss:stack_pointer(,1) # Store old stack pointer, need to use esp in mainReal
 
     lidt real_idt
 
@@ -48,29 +50,34 @@ main16:
     and $0xFE, %al
     mov %eax, %cr0
     # GDT doesn't work so we have to use code segment now, this put early on in linker to guarantee addresses work
-    jmp $0x0, $mainReal
+    ljmp $0x0, $mainReal
 mainReal:
     xor %ax, %ax
     mov %ax, %ss
 
-    movl %esp, %ss:stack_pointer # store stack pointer so we can pop all of the registers from in_registers
-    movl %ss:in_registers, %esp
-    mov (%esp), %eax
-    mov 4(%esp), %ebx
-    mov 8(%esp), %ecx
-    mov 12(%esp), %edx
-    mov 16(%esp), %edi
-    mov 20(%esp), %esi
-    mov 24(%esp), %ebp
+    mov $register_buf, %esp
+    pop %eax
+    pop %ebx 
+    pop %ecx 
+    pop %edx 
+    pop %edi
+    pop %esi
+    pop %ebp
+    add $12, %esp
     # Skip esp to not interfere here
     # Skip 32 and 36 because those are stack segment and code segment
-    mov 40(%esp), %ds
-    mov 44(%esp), %es
-    mov 48(%esp), %fs
-    mov 52(%esp), %gs
-    pushl 56(%esp) # can't write to flags directly so do this
-    popfd
-    movl %ss:stack_pointer, %esp
+    pop %ds
+    add $2, %esp
+    pop %es
+    add $2, %esp
+    pop %fs
+    add $2, %esp
+    pop %gs
+    add $2, %esp
+    # pushl (%esp) # can't write to flags directly so do this
+    # popfd
+
+    mov %ss:stack_pointer(,1), %esp
 
     sti
     # Opcode for interrupt
@@ -80,25 +87,25 @@ mainReal:
     cli
 
     # Now fill out_registers
-    movl %esp, %ss:stack_pointer
-    movl %ss:out_registers, %esp
-    mov %eax, (%esp)
-    mov %ebx, 4(%esp)
-    mov %ecx, 8(%esp)
-    mov %edx, 12(%esp)
-    mov %edi, 16(%esp)
-    mov %esi, 20(%esp)
-    mov %ebp, 24(%esp)
-    movl %ss:stack_pointer, %eax
-    mov %eax, 28(%esp)
-    mov %ds, 40(%esp)
-    mov %es, 44(%esp)
-    mov %fs, 48(%esp)
-    mov %gs, 52(%esp)
-    add $0x52, %esp
-    pushfd
-
-    movl %ss:stack_pointer, %esp
+    mov $register_buf, %esp
+    add $56, %esp
+    # pushfd
+    sub $2, %esp 
+    push %gs
+    sub $2, %esp
+    push %fs
+    sub $2, %esp
+    push %es
+    sub $2, %esp
+    push %ds
+    sub $12, %esp
+    push %ebp
+    push %esi
+    push %edi
+    push %edx
+    push %ecx
+    push %ebx
+    push %eax
 
     lgdt %ss:saved_gdt
     lidt %ss:saved_idt
@@ -116,20 +123,29 @@ end32:
     mov %ax, %gs
     mov %ax, %ss
 
+    mov $register_buf, %esi
+    mov out_register_pointer(,1), %edi
+    mov $60, %ecx
+    rep movsb
+
     # Non-scratch registers
-    pop %ebp
+    mov %ss:stack_pointer(,1), %esp
     pop %edi
     pop %esi
     pop %ebx
+    pop %ebp
 
     sti
     ret
 
+.align 16
 stack_pointer: .long 0
-out_registers: .long 0
-in_registers: .long 0
+register_buf: .zero 60
+out_register_pointer: .long 0
 saved_gdt: .quad 0
 saved_idt: .quad 0
 real_idt:
     .short 0x3ff # Size
     .long 0     # Base
+
+.section .text

@@ -29,7 +29,7 @@ boot:
             cmp bx, 0xaa55
             jne error.int13hExtensions
         
-        mov al, 2 ; will read 32 kib this many times
+        mov al, 8 ; will read 32 kib this many times
 
         .loop:
             mov si, disk_packet ; Add the end of the file
@@ -158,7 +158,7 @@ pmode:
     xor edx, edx
     xor esi, esi
     xor edi, edi
-    xor ebp, ebp
+    mov ebp, esp
 
     xchg bx, bx
     jmp 0x7E00

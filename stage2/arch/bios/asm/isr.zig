@@ -38,6 +38,7 @@ pub fn makeStub(comptime vector: u8) Stub {
                 \\push %ebx
                 :
                 : [vec] "i" (@as(u32, vector)),
+                : "esp", "eax", "ebx"
             );
 
             // Pushes the vector, then moves the function table into ebx, moves the vector into eax, finds the offset into the table, and calls that
@@ -52,7 +53,7 @@ pub fn makeStub(comptime vector: u8) Stub {
                 :
                 : [table] "{ebx}" (&idt.func_table),
                   [vec] "{eax}" (@as(u32, vector)),
-                : "memory"
+                : "memory", "eax", "ebx", "esp"
             );
         }
     }.stub;

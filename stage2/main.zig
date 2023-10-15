@@ -2,6 +2,7 @@ const std = @import("std");
 const api = @import("arch").api;
 const writer = @import("arch").writer;
 const config = @import("common").config;
+const elf = @import("common").elf;
 
 pub export fn main() linksection(".entry") noreturn {
     kmain() catch |err| {
@@ -19,6 +20,7 @@ pub fn kmain() !void {
         }
         std.log.info("Terminals initialized!", .{});
     }
+    //
     if (api.init) |init| {
         try init();
         std.log.info("Platform initialized!", .{});
@@ -48,20 +50,20 @@ pub fn kmain() !void {
     const cfg_file_locations = &.{ "/config.cfg", "/boot/config.cfg" };
     var config_file = try api.disk.loadFile(cfg_file_locations[0]);
     var contents = try config_file.reader().readAllAlloc(api.allocator.allocator, @intCast(try config_file.getSize()));
-    try config_file.free();
     var cfg = try config.Config.readFromBin(api.allocator.allocator, contents);
+    try config_file.free();
     api.allocator.allocator.free(contents);
 
     var kernel_file = try api.disk.loadFile(cfg.kernel_path);
 
     cfg.free(api.allocator.allocator);
 
-    var header = try std.elf.Header.read(kernel_file);
-    var iterator = header.section_header_iterator(kernel_file);
-    while (try iterator.next()) |i| {
-        std.log.info("Program Header: {any}", .{i});
-    }
-
+    var kernel_elf = try elf.ElfFile.parse(&kernel_file);
+    try @call(.never_tail, elf.ElfFile.loadIntoMemory, .{ &kernel_elf, &kernel_file });
+    try kernel_elf.loadIntoMemory(&kernel_file);
+    std.log.info("Jumping to {X}!!!", .{kernel_elf.header.entry});
+    var buffer_there = @as([*]u8, @ptrFromInt(@as(usize, @intCast(kernel_elf.header.entry))))[0..32].*;
+    std.log.info("Buffer There: {any}", .{buffer_there});
     try kernel_file.free();
 
     // Keyboard code for later:
@@ -100,6 +102,7 @@ pub fn kmain() !void {
             std.log.info("Keyboard de-initialized!", .{});
         }
     }
+    @as(*const fn () void, @ptrFromInt(@as(usize, @intCast(kernel_elf.header.entry))))();
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
@@ -109,8 +112,16 @@ pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace, ret_
         }
     }
     std.log.err("[PANIC] {s}", .{msg});
-    _ = error_return_trace;
-    _ = ret_addr;
+    if (error_return_trace) |e| {
+        std.log.err("Stack Trace:", .{});
+        for (e.instruction_addresses) |addr| {
+            std.log.err("Address: {X}", .{addr});
+        }
+    }
+    if (ret_addr) |r| {
+        std.log.err("Ret Address: {X}", .{r});
+    }
+
     while (true) asm volatile ("hlt");
 }
 

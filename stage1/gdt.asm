@@ -1,9 +1,3 @@
-%ifdef DEBUG
-section .data
-%endif
-
-global gdt ; for unit testing
-
 gdt:
     ; acts as null segment and as pointer to save room
     .pointer:
@@ -52,5 +46,3 @@ gdt:
         db 0x0
 
     .end:
-
-section .text

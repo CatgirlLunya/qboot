@@ -71,7 +71,7 @@ fn CreateUEFITarget(b: *std.Build) *std.Build.Step {
         .name = "BOOTX64",
         .root_source_file = .{ .path = comptime here() ++ "/stage2/main.zig" },
         .target = target,
-        .optimize = .ReleaseSmall,
+        .optimize = .Debug,
         .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },
     });
     // zig fmt: on
@@ -186,14 +186,15 @@ fn CreateBIOSStage2Target(b: *std.Build) !*std.Build.Step {
     target.cpu_features_sub.addFeature(@intFromEnum(features.sse2));
     target.cpu_features_sub.addFeature(@intFromEnum(features.avx));
     target.cpu_features_sub.addFeature(@intFromEnum(features.avx2));
-    target.cpu_features_add.addFeature(@intFromEnum(features.soft_float));
+    target.cpu_features_sub.addFeature(@intFromEnum(features.soft_float));
+    // target.cpu_features_add.addFeature(@intFromEnum(features.soft_float));
 
     // zig fmt: off
     const exe = b.addExecutable(.{
         .name = "stage2.bin",
         .root_source_file = .{ .path = comptime here() ++ "/stage2/main.zig" },
         .target = target,
-        .optimize = .ReleaseSmall,
+        .optimize = .ReleaseSafe,
         .main_pkg_path = .{.path = comptime here() ++ "/stage2/" },
     });
     // zig fmt: on

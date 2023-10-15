@@ -2,6 +2,7 @@ const builtin = @import("builtin");
 const API = @import("api").API;
 
 pub const writer = @import("writer.zig");
+pub const debug = @import("bios/debug.zig");
 
 pub const api: API = switch (builtin.os.tag) {
     .uefi => @import("uefi/api.zig").api(),

@@ -1,10 +1,15 @@
 const std = @import("std");
 
-pub const PrideFlag = enum(u8) {
+pub const PrideFlag = enum {
     none,
     gay,
     bi,
     trans,
+};
+
+pub const Protocol = enum {
+    q32,
+    q64,
 };
 
 pub const Error = error{
@@ -16,6 +21,7 @@ pub const Error = error{
 pub const Config = struct {
     kernel_path: []u8,
     flag: PrideFlag = .none,
+    protocol: Protocol = .q32,
 
     fn sanitizeString(allocator: std.mem.Allocator, str: []const u8) ![]u8 {
         var sanitized = try allocator.alloc(u8, str.len);
@@ -30,6 +36,13 @@ pub const Config = struct {
             if (eql(value, "bi")) break :blk .bi;
             if (eql(value, "trans")) break :blk .trans;
             if (eql(value, "gay")) break :blk .gay;
+        };
+    }
+
+    fn handleProtocol(config: *Config, value: []u8) !void {
+        config.protocol = blk: {
+            if (eql(value, "q32")) break :blk .q32;
+            if (eql(value, "q64")) break :blk .q64;
         };
     }
 
@@ -60,6 +73,8 @@ pub const Config = struct {
                 try config.handleFlag(sanitized_value);
             } else if (eql(sanitized_key, "path")) {
                 try config.handlePath(allocator, sanitized_value);
+            } else if (eql(sanitized_key, "protocol")) {
+                try config.handleProtocol(sanitized_value);
             } else {
                 return error.InvalidKey;
             }

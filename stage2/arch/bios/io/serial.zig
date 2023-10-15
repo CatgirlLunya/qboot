@@ -24,7 +24,7 @@ fn setLineControlRegister(port: u16, lcr: LineControlRegister) void {
 fn setBaudDivisor(port: u16, divisor: u16) void {
     setLineControlRegister(port, .{ .dlab = true });
     cpu.outb(port, @intCast(divisor & 0xFF));
-    cpu.outb(port + 1, @intCast(divisor << 8));
+    cpu.outb(port + 1, @intCast(divisor >> 8));
     setLineControlRegister(port, .{ .dlab = false });
 }
 
