@@ -54,17 +54,38 @@ pub fn kmain() !void {
     try config_file.free();
     api.allocator.allocator.free(contents);
 
-    var kernel_file = try api.disk.loadFile(cfg.kernel_path);
+    const colors: [6]@import("api").terminal.bg_color = switch (cfg.flag) {
+        .gay => .{ .red, .brown, .brown, .green, .blue, .magenta },
+        .bi => .{ .red, .red, .magenta, .blue, .blue, .black },
+        .trans => .{ .blue, .magenta, .gray, .magenta, .blue, .black },
+        else => .{ .black, .black, .black, .black, .black, .black },
+    };
+
+    if (api.terminals) |terminals| {
+        for (terminals) |terminal| {
+            for (colors) |color| {
+                if (color == .black) break;
+                if (terminal.setColor) |setColor| try setColor(.blue, color);
+                std.log.info("          ", .{});
+            }
+        }
+    }
+
+    if (api.terminals) |terminals| {
+        for (terminals) |terminal| {
+            if (terminal.setColor) |setColor| try setColor(.white, .black);
+        }
+    }
+
+    var kernel_file = api.disk.loadFile(cfg.kernel_path) catch {
+        @panic("Could not find specified kernel file!");
+    };
 
     cfg.free(api.allocator.allocator);
 
     var kernel_elf = try elf.ElfFile.parse(&kernel_file);
-    try @call(.never_tail, elf.ElfFile.loadIntoMemory, .{ &kernel_elf, &kernel_file });
     try kernel_elf.loadIntoMemory(&kernel_file);
-    std.log.info("Jumping to {X}!!!", .{kernel_elf.header.entry});
-    var buffer_there = @as([*]u8, @ptrFromInt(@as(usize, @intCast(kernel_elf.header.entry))))[0..32].*;
-    std.log.info("Buffer There: {any}", .{buffer_there});
-    try kernel_file.free();
+    try kernel_file.free(); // Don't need metadata anymore
 
     // Keyboard code for later:
     // std.log.info("Now you can type: ", .{});
@@ -102,6 +123,8 @@ pub fn kmain() !void {
             std.log.info("Keyboard de-initialized!", .{});
         }
     }
+
+    std.log.info("Jumping to {X}!!!", .{kernel_elf.header.entry});
     @as(*const fn () void, @ptrFromInt(@as(usize, @intCast(kernel_elf.header.entry))))();
 }
 
